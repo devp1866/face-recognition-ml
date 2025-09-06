@@ -8,7 +8,7 @@ class DeepFaceLivelinessDetector:
     def __init__(self):
         """Initialize DeepFace liveliness detector."""
         self.model_name = "VGG-Face"  # or "Facenet", "OpenFace", etc.
-        self.detector_backend = "opencv"  # or "mtcnn", "retinaface", etc.
+        self.detector_backend = "retinaface"  # or "mtcnn", "retinaface", etc.
         self.anti_spoofing = True
         
     def check_liveliness(self, frame):

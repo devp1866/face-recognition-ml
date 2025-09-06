@@ -1,0 +1,14 @@
+# Python virtual environment
+venv/
+__pycache__/
+
+# System files
+.DS_Store
+
+# IDE files
+.idea/
+.vscode/
+
+# Model files (users should download these themselves)
+*.dat
+*.h5

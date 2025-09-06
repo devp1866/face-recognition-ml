@@ -1,9 +1,11 @@
+# enroll.py
 import os
 import cv2
 import numpy as np
-import face_recognition
 import json
 import argparse
+from pathlib import Path
+from utils import get_embedding
 
 DB_FILE = "db_embeddings.json"
 
@@ -21,36 +23,30 @@ def save_proto(student_id, proto):
     with open(DB_FILE, "w") as f:
         json.dump(db, f, indent=2)
 
-def enroll_student(student_id, folder_path):
-    encodings = []
+def enroll_student(student_id, folder):
+    embeddings = []
+    image_files = list(Path(folder).glob("*.jpg")) + list(Path(folder).glob("*.png"))
+    
+    print(f"Processing {len(image_files)} images for student {student_id}...")
+    for img_path in image_files:
+        img = cv2.imread(str(img_path))
+        # DeepFace expects BGR, which cv2.imread provides, so no color conversion needed here.
+        emb = get_embedding(img)
+        if emb is not None:
+            embeddings.append(emb)
 
-    for filename in os.listdir(folder_path):
-        file_path = os.path.join(folder_path, filename)
-        image = cv2.imread(file_path)
-
-        if image is None:
-            print(f"[WARN] Could not read {file_path}")
-            continue
-
-        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        boxes = face_recognition.face_locations(rgb)
-        if len(boxes) == 0:
-            print(f"[WARN] No face detected in {file_path}")
-            continue
-
-        encoding = face_recognition.face_encodings(rgb, boxes)[0]
-        encodings.append(encoding)
-
-    if len(encodings) == 0:
-        print("[ERROR] No faces enrolled!")
+    if len(embeddings) == 0:
+        print(f"❌ No valid faces found for {student_id}. Please use clear, frontal images.")
         return
 
-    proto = np.mean(encodings, axis=0)
+    # Create the average prototype embedding
+    proto = np.mean(embeddings, axis=0)
     save_proto(student_id, proto)
-    print(f"[INFO] Enrolled student {student_id} with {len(encodings)} images.")
+    print(f"✅ Enrolled {student_id} with {len(embeddings)} images.")
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Enroll a student using their photos.")
     parser.add_argument("--id", required=True, help="Student ID")
     parser.add_argument("--folder", required=True, help="Folder with student images")
     args = parser.parse_args()
