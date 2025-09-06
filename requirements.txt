@@ -1,0 +1,5 @@
+opencv-python>=4.8.0
+numpy>=1.26.0
+face-recognition>=1.3.0
+tensorflow>=2.16.0,<2.21.0
+deepface>=0.0.79
