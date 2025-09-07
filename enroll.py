@@ -1,54 +1,44 @@
-# enroll.py
-import os
-import cv2
+# enroll.py (One-Time Embedding Generator)
+import face_recognition
 import numpy as np
-import json
-import argparse
-from pathlib import Path
-from utils import get_embedding
+import os
+import pickle
 
-DB_FILE = "db_embeddings.json"
+# --- CONFIGURATION ---
+DATASET_FOLDER = "dataset"
+EMBEDDINGS_FILE = "known_embeddings.pkl"
 
-def save_proto(student_id, proto):
-    if not os.path.exists(DB_FILE) or os.stat(DB_FILE).st_size == 0:
-        db = {}
-    else:
-        try:
-            with open(DB_FILE, "r") as f:
-                db = json.load(f)
-        except json.JSONDecodeError:
-            db = {}
+def generate_embeddings():
+    """Processes the dataset, creates prototype embeddings, and saves them to a file."""
+    print("Processing dataset and generating embeddings...")
+    known_face_embeddings = []
+    known_face_ids = []
 
-    db[str(student_id)] = proto.tolist()
-    with open(DB_FILE, "w") as f:
-        json.dump(db, f, indent=2)
+    for student_id in os.listdir(DATASET_FOLDER):
+        student_folder = os.path.join(DATASET_FOLDER, student_id)
+        if os.path.isdir(student_folder):
+            embeddings = []
+            for filename in os.listdir(student_folder):
+                image_path = os.path.join(student_folder, filename)
+                try:
+                    image = face_recognition.load_image_file(image_path)
+                    face_encodings = face_recognition.face_encodings(image)
+                    if face_encodings:
+                        embeddings.append(face_encodings[0])
+                except Exception as e:
+                    print(f"Warning: Could not process image {image_path}. Error: {e}")
+            
+            if embeddings:
+                prototype_embedding = np.mean(embeddings, axis=0)
+                known_face_embeddings.append(prototype_embedding)
+                known_face_ids.append(student_id)
+                print(f"✅ Enrolled student: {student_id}")
 
-def enroll_student(student_id, folder):
-    embeddings = []
-    image_files = list(Path(folder).glob("*.jpg")) + list(Path(folder).glob("*.png"))
+    # Save the embeddings and IDs to a file
+    with open(EMBEDDINGS_FILE, 'wb') as f:
+        pickle.dump({'embeddings': known_face_embeddings, 'ids': known_face_ids}, f)
     
-    print(f"Processing {len(image_files)} images for student {student_id}...")
-    for img_path in image_files:
-        img = cv2.imread(str(img_path))
-        # DeepFace expects BGR, which cv2.imread provides, so no color conversion needed here.
-        emb = get_embedding(img)
-        if emb is not None:
-            embeddings.append(emb)
-
-    if len(embeddings) == 0:
-        print(f"❌ No valid faces found for {student_id}. Please use clear, frontal images.")
-        return
-
-    # Create the average prototype embedding
-    proto = np.mean(embeddings, axis=0)
-    save_proto(student_id, proto)
-    print(f"✅ Enrolled {student_id} with {len(embeddings)} images.")
-
+    print(f"\n✅ Embeddings for {len(known_face_ids)} students saved to {EMBEDDINGS_FILE}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Enroll a student using their photos.")
-    parser.add_argument("--id", required=True, help="Student ID")
-    parser.add_argument("--folder", required=True, help="Folder with student images")
-    args = parser.parse_args()
-
-    enroll_student(args.id, args.folder)
+    generate_embeddings()
