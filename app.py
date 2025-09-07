@@ -1,4 +1,4 @@
-# app.py (Final Version with CSV Logging & Pre-loaded Embeddings)
+
 import face_recognition
 import cv2
 import numpy as np
@@ -9,7 +9,6 @@ import csv
 from datetime import datetime
 from scipy.spatial import distance as dist
 
-# --- LIVENESS CHECKER CLASS ---
 class LivenessChecker:
     def __init__(self, frames_to_check=10, variation_thresh=0.03):
         self.frames_to_check = frames_to_check
@@ -21,7 +20,7 @@ class LivenessChecker:
         A = dist.euclidean(eye[1], eye[5])
         B = dist.euclidean(eye[2], eye[4])
         C = dist.euclidean(eye[0], eye[3])
-        if C == 0: return 0.3 # Avoid division by zero
+        if C == 0: return 0.3
         return (A + B) / (2.0 * C)
 
     def check(self, face_landmarks):
@@ -57,7 +56,6 @@ marked_this_session = set()
 liveness_checkers = {}
 
 def load_known_faces():
-    """Loads pre-generated embeddings from a file."""
     global known_face_embeddings, known_face_ids
     print("Loading known faces from embeddings file...")
     try:
@@ -67,13 +65,11 @@ def load_known_faces():
             known_face_ids = data['ids']
         print(f"✅ Loaded {len(known_face_ids)} enrolled students.")
     except FileNotFoundError:
-        print(f"❌ Embeddings file '{EMBEDDINGS_FILE}' not found. Please run enroll.py first.")
+        print(f"Embeddings file '{EMBEDDINGS_FILE}' not found. Please run enroll.py first.")
         exit()
 
 def log_attendance(student_id):
-    """Logs attendance to a CSV file."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # Check if CSV exists, if not, write header
     file_exists = os.path.isfile(CSV_FILE)
     with open(CSV_FILE, mode='a', newline='') as f:
         writer = csv.writer(f)
@@ -82,13 +78,13 @@ def log_attendance(student_id):
         writer.writerow([student_id, timestamp])
 
 def main():
-    """Main function to run the attendance system."""
+    
     load_known_faces()
 
-    print("🚀 Starting camera...")
+    print("Starting camera...")
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     if not cap.isOpened():
-        print("❌ CRITICAL: Cannot open camera.")
+        print("CRITICAL: Cannot open camera.")
         return
     
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
@@ -139,7 +135,7 @@ def main():
 
                         if student_id not in marked_this_session:
                             log_attendance(student_id)
-                            print(f"✅ Attendance Marked for {student_id}")
+                            print(f"Attendance Marked for {student_id}")
                             marked_this_session.add(student_id)
                     else:
                         student_id = "Unknown"

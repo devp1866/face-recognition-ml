@@ -1,15 +1,13 @@
-# enroll.py (One-Time Embedding Generator)
 import face_recognition
 import numpy as np
 import os
 import pickle
 
-# --- CONFIGURATION ---
+
 DATASET_FOLDER = "dataset"
 EMBEDDINGS_FILE = "known_embeddings.pkl"
 
 def generate_embeddings():
-    """Processes the dataset, creates prototype embeddings, and saves them to a file."""
     print("Processing dataset and generating embeddings...")
     known_face_embeddings = []
     known_face_ids = []
@@ -32,9 +30,9 @@ def generate_embeddings():
                 prototype_embedding = np.mean(embeddings, axis=0)
                 known_face_embeddings.append(prototype_embedding)
                 known_face_ids.append(student_id)
-                print(f"✅ Enrolled student: {student_id}")
+                print(f"Enrolled student: {student_id}")
 
-    # Save the embeddings and IDs to a file
+    
     with open(EMBEDDINGS_FILE, 'wb') as f:
         pickle.dump({'embeddings': known_face_embeddings, 'ids': known_face_ids}, f)
     
