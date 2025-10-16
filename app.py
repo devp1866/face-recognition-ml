@@ -1,6 +1,3 @@
-# app.py
-# Usage: python app.py test1.jpg [test2.jpg ...]
-# Loads known_embeddings_arcface.pkl and runs recognition; outputs attendance.csv and labeled_<image>.jpg
 
 import os
 import sys
@@ -13,7 +10,7 @@ EMBEDDINGS_FILE = "known_embeddings_arcface.pkl"
 ATTENDANCE_FILE = "attendance.csv"
 DET_SIZE = (640, 640)
 MAX_DIM = 1600
-COSINE_THRESHOLD = 0.40   # default: tune between ~0.30 - 0.55 depending on your data
+COSINE_THRESHOLD = 0.40   #  tune between ~0.30 - 0.55 depending on your data
 
 # Prevent duplicate marks within a single run
 marked_this_session = set()
@@ -26,9 +23,7 @@ def load_embeddings(path=EMBEDDINGS_FILE):
     with open(path, "rb") as f:
         data = pickle.load(f)
 
-    # Accept a few possible formats:
-    # 1) {"emb_dict": {...}, "ids": [...], "embeddings": np.array}
-    # 2) a plain dict {id: embedding}
+
     if isinstance(data, dict) and "emb_dict" in data:
         emb_dict = data["emb_dict"]
     elif isinstance(data, dict) and all(isinstance(v, (list, np.ndarray)) for v in data.values()):
@@ -36,7 +31,7 @@ def load_embeddings(path=EMBEDDINGS_FILE):
     else:
         raise ValueError("Invalid embeddings file format. Re-run enroll.py to generate the correct file.")
 
-    # ensure numpy arrays and float32
+
     for k, v in list(emb_dict.items()):
         emb_dict[k] = np.asarray(v, dtype=np.float32)
 
