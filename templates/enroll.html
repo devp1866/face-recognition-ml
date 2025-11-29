@@ -1,0 +1,121 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div
+    class="max-w-md mx-auto bg-slate-800 rounded-2xl shadow-xl overflow-hidden md:max-w-2xl mt-10 p-8 border border-slate-700 fade-in">
+    <div class="uppercase tracking-wide text-sm text-indigo-400 font-semibold mb-2">New Enrollment</div>
+    <h2 class="text-3xl font-bold text-white mb-6">Add a Person</h2>
+
+    <!-- Guidance Note -->
+    <div class="bg-indigo-900/30 border-l-4 border-indigo-500 p-4 mb-6 rounded-r-lg">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-indigo-200">
+                    Upload clear photos of the face. Avoid sunglasses or heavy makeup. You can upload up to 4 images for
+                    better accuracy.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <form action="/enroll" method="post" enctype="multipart/form-data" class="space-y-6">
+        <div>
+            <label for="name" class="block text-sm font-medium text-slate-300">Full Name</label>
+            <input type="text" name="name" id="name" required placeholder="e.g. John Doe"
+                class="mt-1 block w-full rounded-lg bg-slate-900 border-slate-600 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2.5 border placeholder-slate-500">
+        </div>
+
+        <div>
+            <label for="file" class="block text-sm font-medium text-slate-300">Photos (1-4)</label>
+            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-600 border-dashed rounded-lg hover:border-indigo-500 transition-colors duration-200 bg-slate-900/50"
+                id="drop-zone">
+                <div class="space-y-1 text-center">
+                    <svg class="mx-auto h-12 w-12 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48"
+                        aria-hidden="true">
+                        <path
+                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div class="flex text-sm text-slate-400 justify-center">
+                        <label for="file"
+                            class="relative cursor-pointer rounded-md font-medium text-indigo-400 hover:text-indigo-300 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                            <span>Upload files</span>
+                            <input id="file" name="file" type="file" class="sr-only" accept="image/*" multiple required>
+                        </label>
+                        <p class="pl-1">or drag and drop</p>
+                    </div>
+                    <p class="text-xs text-slate-500">PNG, JPG up to 10MB. Max 4 images.</p>
+                </div>
+            </div>
+            <!-- Preview Area -->
+            <div id="preview-container" class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4 hidden"></div>
+        </div>
+
+        <div>
+            <button type="submit"
+                class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-[1.02]">
+                Enroll Person
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const fileInput = document.getElementById('file');
+    const previewContainer = document.getElementById('preview-container');
+    const dropZone = document.getElementById('drop-zone');
+
+    // DataTransfer to manage files
+    const dt = new DataTransfer();
+
+    fileInput.addEventListener('change', function () {
+        for (let i = 0; i < this.files.length; i++) {
+            if (dt.items.length < 4) {
+                dt.items.add(this.files[i]);
+            }
+        }
+        this.files = dt.files;
+        updatePreviews();
+    });
+
+    function updatePreviews() {
+        previewContainer.innerHTML = '';
+        if (dt.files.length > 0) {
+            previewContainer.classList.remove('hidden');
+
+            Array.from(dt.files).forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const div = document.createElement('div');
+                    div.className = 'relative aspect-w-1 aspect-h-1 group';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" class="object-cover rounded-lg shadow-sm w-full h-24 border border-slate-600">
+                        <button type="button" onclick="removeFile(${index})" class="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 m-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    `;
+                    previewContainer.appendChild(div);
+                }
+                reader.readAsDataURL(file);
+            });
+        } else {
+            previewContainer.classList.add('hidden');
+        }
+    }
+
+    function removeFile(index) {
+        dt.items.remove(index);
+        fileInput.files = dt.files;
+        updatePreviews();
+    }
+</script>
+{% endblock %}

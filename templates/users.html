@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-10 px-4 sm:px-6 lg:px-8 fade-in">
+    <div class="sm:flex sm:items-center">
+        <div class="sm:flex-auto">
+            <h1 class="text-2xl font-bold text-white">Enrolled Users</h1>
+            <p class="mt-2 text-sm text-slate-400">A list of all users currently enrolled in the face recognition
+                system.</p>
+        </div>
+        <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+            <a href="/enroll"
+                class="inline-flex items-center justify-center rounded-lg border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto transition-colors">
+                Add User
+            </a>
+        </div>
+    </div>
+
+    <div class="mt-8 flex flex-col">
+        <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+                <div
+                    class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg border border-slate-700">
+                    <table class="min-w-full divide-y divide-slate-700">
+                        <thead class="bg-slate-800">
+                            <tr>
+                                <th scope="col"
+                                    class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6">ID</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Name</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Created
+                                    At</th>
+                                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                                    <span class="sr-only">Actions</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700 bg-slate-900">
+                            {% for user in users %}
+                            <tr class="hover:bg-slate-800/50 transition-colors">
+                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6">{{
+                                    user.id }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-300">{{ user.name }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-400">{{ user.created_at }}
+                                </td>
+                                <td
+                                    class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                    <form action="/delete_user/{{ user.id }}" method="post"
+                                        onsubmit="return confirm('Are you sure you want to delete {{ user.name }}?');"
+                                        class="inline">
+                                        <button type="submit"
+                                            class="text-red-400 hover:text-red-300 transition-colors flex items-center justify-end ml-auto">
+                                            <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
+                                                stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                            Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="px-6 py-10 text-center text-sm text-slate-500">
+                                    No users enrolled yet. <a href="/enroll"
+                                        class="text-indigo-400 hover:text-indigo-300">Enroll someone</a> to get started.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

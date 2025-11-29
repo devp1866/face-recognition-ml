@@ -51,11 +51,6 @@ cd face-recognition-ml
 pip install -r requirements.txt
 ```
 
-### 🧍‍♂️ Enrollment Phase  
-```bash
-python enroll.py
-```
-
 ### 🖥️ Running the Attendance App
 ```bash
 python app.py
@@ -64,4 +59,4 @@ python app.py
 ## 👨‍💻 Author
 - 🧩 Devkumar Patel
 - 📧 Email: devp1866@gmail.com
-- 🔗 GitHub: https://github.com/devp1866
+- 🔗 Portfolio: https://devp1866.framer.website

@@ -1,0 +1,128 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Welcome Section -->
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-extrabold text-white sm:text-5xl sm:tracking-tight lg:text-6xl">
+            Smart Face <span class="text-indigo-500">Attendance</span>
+        </h1>
+        <p class="max-w-xl mx-auto mt-5 text-xl text-slate-400">
+            Secure, fast, and reliable face recognition system for automated attendance tracking.
+        </p>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2 mb-12">
+        <!-- Total Users Card -->
+        <div
+            class="bg-slate-800 overflow-hidden shadow-lg rounded-2xl border border-slate-700 hover:border-indigo-500 transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-indigo-900/50 rounded-md p-3">
+                        <svg class="h-8 w-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-slate-400 truncate">
+                                Total Enrolled Users
+                            </dt>
+                            <dd>
+                                <div class="text-3xl font-bold text-white">
+                                    {{ total_users }}
+                                </div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-700/50 px-5 py-3">
+                <div class="text-sm">
+                    <a href="/users" class="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+                        View all users &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Today Card -->
+        <div
+            class="bg-slate-800 overflow-hidden shadow-lg rounded-2xl border border-slate-700 hover:border-green-500 transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-green-900/50 rounded-md p-3">
+                        <svg class="h-8 w-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-slate-400 truncate">
+                                Attendance Today
+                            </dt>
+                            <dd>
+                                <div class="text-3xl font-bold text-white">
+                                    {{ attendance_count }}
+                                </div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-700/50 px-5 py-3">
+                <div class="text-sm">
+                    <a href="/logs" class="font-medium text-green-400 hover:text-green-300 transition-colors">
+                        View logs &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="bg-slate-800 shadow-lg rounded-2xl border border-slate-700 p-8">
+        <h2 class="text-xl font-bold text-white mb-6">Quick Actions</h2>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <a href="/enroll"
+                class="relative block rounded-xl border border-slate-600 bg-slate-700/30 px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-indigo-500 hover:bg-slate-700 transition-all duration-200 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                <div class="flex-shrink-0">
+                    <div class="h-10 w-10 rounded-full bg-indigo-900/50 flex items-center justify-center">
+                        <svg class="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <span class="absolute inset-0" aria-hidden="true"></span>
+                    <p class="text-sm font-medium text-white">Enroll New Person</p>
+                    <p class="text-sm text-slate-400 truncate">Add a new user to the database</p>
+                </div>
+            </a>
+
+            <a href="/attendance"
+                class="relative block rounded-xl border border-slate-600 bg-slate-700/30 px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-green-500 hover:bg-slate-700 transition-all duration-200 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500">
+                <div class="flex-shrink-0">
+                    <div class="h-10 w-10 rounded-full bg-green-900/50 flex items-center justify-center">
+                        <svg class="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <span class="absolute inset-0" aria-hidden="true"></span>
+                    <p class="text-sm font-medium text-white">Mark Attendance</p>
+                    <p class="text-sm text-slate-400 truncate">Upload photo to check attendance</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

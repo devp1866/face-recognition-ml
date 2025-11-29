@@ -1,0 +1,82 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-10 px-4 sm:px-6 lg:px-8 fade-in">
+    <div class="sm:flex sm:items-center">
+        <div class="sm:flex-auto">
+            <h1 class="text-2xl font-bold text-white">Attendance Logs</h1>
+            <p class="mt-2 text-sm text-slate-400">View and filter attendance records.</p>
+        </div>
+    </div>
+
+    <!-- Search/Filter Form -->
+    <div class="mt-6 bg-slate-800 shadow-lg rounded-xl border border-slate-700 p-4">
+        <form action="/logs" method="get" class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+            <div class="sm:col-span-3">
+                <label for="name" class="block text-sm font-medium text-slate-300">Search by Name</label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text" name="name" id="name" placeholder="Enter name..."
+                        value="{{ request.args.get('name', '') }}"
+                        class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-slate-600 rounded-lg bg-slate-900 text-white placeholder-slate-500 p-2.5 border">
+                </div>
+            </div>
+
+            <div class="sm:col-span-2">
+                <label for="date" class="block text-sm font-medium text-slate-300">Filter by Date</label>
+                <input type="date" name="date" id="date" value="{{ request.args.get('date', '') }}"
+                    class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-slate-600 rounded-lg bg-slate-900 text-white p-2.5 border placeholder-slate-500">
+            </div>
+
+            <div class="sm:col-span-1 flex items-end">
+                <button type="submit"
+                    class="w-full inline-flex justify-center py-2.5 px-4 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                    Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="mt-8 flex flex-col">
+        <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+                <div
+                    class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg border border-slate-700">
+                    <table class="min-w-full divide-y divide-slate-700">
+                        <thead class="bg-slate-800">
+                            <tr>
+                                <th scope="col"
+                                    class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6">ID</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Name</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Timestamp
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700 bg-slate-900">
+                            {% for log in logs %}
+                            <tr class="hover:bg-slate-800/50 transition-colors">
+                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6">{{
+                                    log.id }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-300">{{ log.name }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-400">{{ log.time }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="px-6 py-10 text-center text-sm text-slate-500">
+                                    No attendance records found.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
