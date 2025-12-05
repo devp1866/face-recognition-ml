@@ -22,20 +22,12 @@ import tempfile
 # Debug: Print current directory and contents
 print(f"Current Working Directory: {os.getcwd()}")
 print(f"Files in CWD: {os.listdir(os.getcwd())}")
-
-# Use script-relative paths to ensure Flask finds folders regardless of CWD
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
-STATIC_DIR = os.path.join(BASE_DIR, "static")
-
-print(f"Base Directory: {BASE_DIR}")
-print(f"Template Directory: {TEMPLATE_DIR}")
-if os.path.exists(TEMPLATE_DIR):
-    print(f"Files in templates: {os.listdir(TEMPLATE_DIR)}")
+if os.path.exists("templates"):
+    print(f"Files in templates: {os.listdir('templates')}")
 else:
-    print("Templates directory NOT found at expected path!")
+    print("Templates directory NOT found!")
 
-app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
+app = Flask(__name__, template_folder=os.path.abspath("templates"))
 app.secret_key = "supersecretkey"  # Required for flash messages
 
 # Use temp directory for Vercel compatibility
