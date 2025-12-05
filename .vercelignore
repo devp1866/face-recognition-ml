@@ -1,0 +1,14 @@
+# Ignore data and temporary files
+dataset
+static/uploads
+static/results
+*.db
+*.sqlite
+__pycache__
+*.pyc
+.git
+.env
+venv
+.idea
+.vscode
+attendance.csv
