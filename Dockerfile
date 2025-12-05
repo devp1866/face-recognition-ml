@@ -21,7 +21,7 @@ COPY . .
 RUN mkdir -p dataset static/uploads static/results
 
 # Expose port
-EXPOSE 5000
+EXPOSE 7860
 
 # Run the application
 CMD ["python", "app.py"]
