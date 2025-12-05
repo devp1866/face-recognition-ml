@@ -1,4 +1,4 @@
-# 🎯 Face Detection & Recognition Attendance System
+# 🎯 SmartFace - Face Detection & Recognition Attendance System
 
 An advanced **AI-powered Face Recognition Attendance System** using **InsightFace** and **OpenCV**.  
 This system captures student faces, generates embeddings during enrollment, and recognizes them in real-time to mark attendance automatically with **ID and timestamp** in a CSV file.
@@ -7,7 +7,7 @@ This system captures student faces, generates embeddings during enrollment, and 
 
 ## 🧠 Overview
 
-This project provides an efficient, contactless, and automated solution to attendance management. It replaces traditional manual entry systems with a modern AI approach capable of identifying multiple faces in real time.
+SmartFace is efficient, contactless, and automated solution to attendance management. It replaces traditional manual entry systems with a modern AI approach capable of identifying multiple faces in real time.
 
 Each student's facial features are encoded into **high-dimensional embeddings** using InsightFace at the time of enrollment. During runtime, the system extracts facial embeddings from live video frames and matches them against the stored embeddings database using vector similarity. Once a match is confirmed, the student’s attendance is recorded in a CSV file with their ID and the current timestamp — ensuring accuracy and eliminating duplicate entries for the same day.
 
