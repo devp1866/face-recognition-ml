@@ -18,16 +18,7 @@ from datetime import datetime
 
 import tempfile
 
-# app = Flask(__name__)
-# Debug: Print current directory and contents
-print(f"Current Working Directory: {os.getcwd()}")
-print(f"Files in CWD: {os.listdir(os.getcwd())}")
-if os.path.exists("templates"):
-    print(f"Files in templates: {os.listdir('templates')}")
-else:
-    print("Templates directory NOT found!")
-
-app = Flask(__name__, template_folder=os.path.abspath("templates"))
+app = Flask(__name__)
 app.secret_key = "supersecretkey"  # Required for flash messages
 
 # Use temp directory for Vercel compatibility
