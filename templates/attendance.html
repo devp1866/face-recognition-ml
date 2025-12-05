@@ -38,7 +38,7 @@
             <h3 class="text-lg leading-6 font-bold text-white">Detection Results</h3>
         </div>
         <div class="p-4 bg-slate-900/50 flex justify-center">
-            <img src="{{ url_for('static', filename='results/' + result_image) }}" alt="Result"
+            <img src="{{ url_for('serve_result', filename=result_image) }}" alt="Result"
                 class="max-w-full h-auto rounded-lg shadow-lg border border-slate-600">
         </div>
         <div class="bg-slate-800 px-4 py-4 sm:px-6">

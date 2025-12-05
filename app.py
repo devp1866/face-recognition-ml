@@ -28,7 +28,7 @@ os.environ["INSIGHTFACE_HOME"] = TEMP_DIR  # Set home for model downloads
 app.config["UPLOAD_FOLDER"] = os.path.join(TEMP_DIR, "uploads")
 app.config["RESULT_FOLDER"] = os.path.join(TEMP_DIR, "results")
 app.config["DATASET_FOLDER"] = os.path.join(TEMP_DIR, "dataset")
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max upload
+app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024  # 128MB max upload
 
 # Ensure directories exist
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
@@ -88,7 +88,6 @@ def index():
             if len(lines) > 1:
                 today = datetime.now().strftime("%Y-%m-%d")
                 attendance_count = sum(1 for line in lines[1:] if today in line)
-
     return render_template(
         "index.html", total_users=total_users, attendance_count=attendance_count
     )
@@ -96,6 +95,7 @@ def index():
 
 @app.route("/enroll", methods=["GET", "POST"])
 def enroll():
+    print(f"DEBUG: Entering enroll route. Method: {request.method}")
     if request.method == "POST":
         # Check user limit
         if get_user_count() >= MAX_USERS:
@@ -119,6 +119,8 @@ def enroll():
         embeddings = []
         valid_images = []
 
+        print(f"DEBUG: Received {len(files)} files for enrollment.")
+
         # Process each image
         for file in files:
             if file.filename == "":
@@ -129,9 +131,11 @@ def enroll():
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
             if img is None:
+                print(f"DEBUG: Failed to decode image {file.filename}")
                 continue
 
             faces = face_app.get(img)
+            print(f"DEBUG: Detected {len(faces)} faces in {file.filename}")
             if not faces:
                 continue
 
@@ -143,6 +147,7 @@ def enroll():
             valid_images.append(img)
 
         if not embeddings:
+            print("DEBUG: No faces detected in any uploaded images.")
             flash("No faces detected in any of the uploaded images", "error")
             return redirect(request.url)
 
@@ -151,6 +156,7 @@ def enroll():
 
         # Save to DB
         user_id = add_user(name, avg_embedding)
+        print(f"DEBUG: User {name} added with ID {user_id}")
 
         # Save Reference Images
         user_dir = os.path.join(app.config["DATASET_FOLDER"], str(user_id))
@@ -291,6 +297,13 @@ def logs():
     return render_template("logs.html", logs=logs_data)
 
 
+@app.route("/results/<filename>")
+def serve_result(filename):
+    from flask import send_from_directory
+
+    return send_from_directory(app.config["RESULT_FOLDER"], filename)
+
+
 @app.route("/users")
 def users():
     all_users = get_all_users()
@@ -349,5 +362,5 @@ def reset_app():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=7860)
+    app.run(debug=True)
     # app.run(debug=True, port=5000)

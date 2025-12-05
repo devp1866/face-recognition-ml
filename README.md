@@ -1,13 +1,3 @@
----
-title: Smart Face Attendance
-emoji: 📸
-colorFrom: indigo
-colorTo: gray
-sdk: docker
-pinned: false
-app_port: 7860
----
-
 # 🎯 Face Detection & Recognition Attendance System
 
 An advanced **AI-powered Face Recognition Attendance System** using **InsightFace** and **OpenCV**.  
