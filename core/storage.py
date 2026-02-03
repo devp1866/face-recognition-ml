@@ -1,10 +1,9 @@
 import sqlite3
 import numpy as np
-import io
 import os
-
 import tempfile
 
+# For AWS/Production, you might switch this to a persistent path or RDS connection string
 DB_NAME = os.path.join(tempfile.gettempdir(), "database.db")
 
 

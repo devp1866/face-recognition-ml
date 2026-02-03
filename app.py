@@ -1,11 +1,14 @@
 import os
-import sqlite3
-import cv2
 import shutil
 import numpy as np
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
-from insightface.app import FaceAnalysis
-from database import (
+import cv2
+from flask import Flask, render_template, request, redirect, url_for, flash
+from datetime import datetime
+import tempfile
+
+# Helper Core Modules
+from core.recognition import FaceEngine
+from core.storage import (
     init_db,
     add_user,
     get_all_embeddings,
@@ -14,14 +17,11 @@ from database import (
     get_user_count,
     reset_db,
 )
-from datetime import datetime
-
-import tempfile
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # Required for flash messages
 
-# Use temp directory for Vercel compatibility
+# Use temp directory for Vercel/Render/AWS compatibility (Ephemeral storage)
 TEMP_DIR = tempfile.gettempdir()
 os.environ["INSIGHTFACE_HOME"] = TEMP_DIR  # Set home for model downloads
 
@@ -35,20 +35,18 @@ os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 os.makedirs(app.config["RESULT_FOLDER"], exist_ok=True)
 os.makedirs(app.config["DATASET_FOLDER"], exist_ok=True)
 
-# Initialize InsightFace
-face_app = FaceAnalysis(providers=["CPUExecutionProvider"])
-face_app.prepare(ctx_id=0, det_size=(640, 640))
+# Initialize Core AI Engine
+# Using 'buffalo_l' for high quality as requested for deployment
+face_engine = FaceEngine(model_name="buffalo_l", ctx_id=0, det_size=(640, 640))
 
 # Initialize DB
 init_db()
 
 ATTENDANCE_FILE = os.path.join(TEMP_DIR, "attendance.csv")
-COSINE_THRESHOLD = 0.40
 MAX_USERS = 10
 
 
-def mark_attendance(user_id, name):
-    """Mark attendance in CSV file with ID, Name, Timestamp."""
+def mark_attendance_csv(user_id, name):
     now = datetime.now()
     ts = now.strftime("%Y-%m-%d %H:%M:%S")
     date_str = now.strftime("%Y-%m-%d")
@@ -60,7 +58,6 @@ def mark_attendance(user_id, name):
             for line in f:
                 parts = line.strip().split(",")
                 if len(parts) >= 3:
-                    # Format: ID,Name,Timestamp
                     csv_id = parts[0]
                     csv_ts = parts[2]
                     if str(csv_id) == str(user_id) and date_str in csv_ts:
@@ -95,7 +92,6 @@ def index():
 
 @app.route("/enroll", methods=["GET", "POST"])
 def enroll():
-    print(f"DEBUG: Entering enroll route. Method: {request.method}")
     if request.method == "POST":
         # Check user limit
         if get_user_count() >= MAX_USERS:
@@ -116,49 +112,39 @@ def enroll():
             flash("Maximum 4 images allowed", "error")
             return redirect(request.url)
 
-        embeddings = []
+        embeddings_list = []
         valid_images = []
 
-        print(f"DEBUG: Received {len(files)} files for enrollment.")
-
-        # Process each image
+        # Process each image using Core Engine
         for file in files:
             if file.filename == "":
                 continue
 
+            # Read image bytes
             img_bytes = file.read()
-            nparr = np.frombuffer(img_bytes, np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            img = face_engine.process_image(img_bytes)
 
             if img is None:
-                print(f"DEBUG: Failed to decode image {file.filename}")
                 continue
 
-            faces = face_app.get(img)
-            print(f"DEBUG: Detected {len(faces)} faces in {file.filename}")
-            if not faces:
-                continue
+            # Get best face embedding
+            emb, face_obj = face_engine.get_best_face_embedding(img)
 
-            # Pick largest face
-            face = max(
-                faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1])
-            )
-            embeddings.append(face.embedding)
-            valid_images.append(img)
+            if emb is not None:
+                embeddings_list.append(emb)
+                valid_images.append(img)
 
-        if not embeddings:
-            print("DEBUG: No faces detected in any uploaded images.")
+        if not embeddings_list:
             flash("No faces detected in any of the uploaded images", "error")
             return redirect(request.url)
 
         # Compute Average Embedding
-        avg_embedding = np.mean(embeddings, axis=0)
+        avg_embedding = np.mean(embeddings_list, axis=0)
 
-        # Save to DB
+        # Save to DB via Storage Module
         user_id = add_user(name, avg_embedding)
-        print(f"DEBUG: User {name} added with ID {user_id}")
 
-        # Save Reference Images
+        # Save Reference Images (Optional, for visual confirmation)
         user_dir = os.path.join(app.config["DATASET_FOLDER"], str(user_id))
         if not os.path.exists(user_dir):
             os.makedirs(user_dir, exist_ok=True)
@@ -181,81 +167,73 @@ def attendance():
             flash("File required", "error")
             return redirect(request.url)
 
-        # 1. Load Embeddings
+        # 1. Load Embeddings from DB
         ids, names, known_embeddings = get_all_embeddings()
 
         # 2. Read Image
         img_bytes = file.read()
-        nparr = np.frombuffer(img_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        img = face_engine.process_image(img_bytes)
 
         if img is None:
             flash("Invalid image", "error")
             return redirect(request.url)
 
-        # Save the uploaded file to uploads folder
-        if not os.path.exists(app.config["UPLOAD_FOLDER"]):
-            os.makedirs(app.config["UPLOAD_FOLDER"])
-
+        # Save the uploaded file log
         upload_filename = f"upload_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
         upload_path = os.path.join(app.config["UPLOAD_FOLDER"], upload_filename)
         cv2.imwrite(upload_path, img)
 
-        # 3. Detect Faces
-        faces = face_app.get(img)
-        out_img = img.copy()
+        # 3. Recognize Faces using Core Engine
+        # This handles detection, recognition, and drawing bounding boxes
+        out_img, results = face_engine.recognize_faces(
+            img, known_embeddings, ids, names
+        )
+        # 4. Mark Attendance for recognized users
+        # NOTE: We re-implement specific attendance marking logic here to ensure
+        # we have access to the User ID, which is required for the database.
 
+        faces = face_engine.get_faces(img)
+        out_img = img.copy()
         results = []
 
-        # Prepare known embeddings if they exist
+        # Pre-normalize (business logic)
         known_norm = None
         if known_embeddings.size > 0:
             norms = np.linalg.norm(known_embeddings, axis=1, keepdims=True)
             known_norm = known_embeddings / norms
 
         for face in faces:
+            # ... drawing logic ...
+            # ... matching logic ...
+
             box = face.bbox.astype(int)
             x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
 
             name = "Unknown"
             best_score = 0.0
-            color = (0, 0, 255)  # Red
+            color = (0, 0, 255)
 
             if known_norm is not None:
                 emb = face.embedding
                 emb_norm = emb / np.linalg.norm(emb)
-
-                # Cosine Similarity
                 sims = np.dot(known_norm, emb_norm)
                 best_idx = np.argmax(sims)
-                best_score = sims[best_idx]
+                best_score = float(sims[best_idx])
 
-                if best_score >= COSINE_THRESHOLD:
+                if best_score >= 0.40:
                     user_id = ids[best_idx]
                     name = names[user_id]
-                    color = (0, 200, 0)  # Green
-                    mark_attendance(user_id, name)
+                    color = (0, 200, 0)
+                    mark_attendance_csv(user_id, name)
 
             label = f"{name} ({best_score:.2f})"
-
-            # Draw
             cv2.rectangle(out_img, (x1, y1), (x2, y2), color, 2)
             cv2.putText(
-                out_img,
-                label,
-                (x1, y1 - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,
-                color,
-                2,
+                out_img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2
             )
-
-            results.append({"name": name, "score": float(best_score)})
+            results.append({"name": name, "score": best_score})
 
         # Save Result
-        if not os.path.exists(app.config["RESULT_FOLDER"]):
-            os.makedirs(app.config["RESULT_FOLDER"])
-
         filename = f"result_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
         save_path = os.path.join(app.config["RESULT_FOLDER"], filename)
         cv2.imwrite(save_path, out_img)
@@ -304,6 +282,19 @@ def serve_result(filename):
     return send_from_directory(app.config["RESULT_FOLDER"], filename)
 
 
+@app.route("/download_attendance")
+def download_attendance():
+    from flask import send_file
+
+    if os.path.exists(ATTENDANCE_FILE):
+        return send_file(
+            ATTENDANCE_FILE, as_attachment=True, download_name="attendance_logs.csv"
+        )
+    else:
+        flash("No attendance logs found.", "error")
+        return redirect(url_for("logs"))
+
+
 @app.route("/users")
 def users():
     all_users = get_all_users()
@@ -335,22 +326,14 @@ def reset_app():
         # 1. Reset DB
         reset_db()
 
-        # 2. Clear Dataset
-        if os.path.exists(app.config["DATASET_FOLDER"]):
-            shutil.rmtree(app.config["DATASET_FOLDER"])
-            os.makedirs(app.config["DATASET_FOLDER"])
+        # 2. Clear Folders
+        for key in ["DATASET_FOLDER", "RESULT_FOLDER", "UPLOAD_FOLDER"]:
+            folder = app.config.get(key)
+            if folder and os.path.exists(folder):
+                shutil.rmtree(folder)
+                os.makedirs(folder)
 
-        # 3. Clear Results
-        if os.path.exists(app.config["RESULT_FOLDER"]):
-            shutil.rmtree(app.config["RESULT_FOLDER"])
-            os.makedirs(app.config["RESULT_FOLDER"])
-
-        # 4. Clear Uploads
-        if os.path.exists(app.config["UPLOAD_FOLDER"]):
-            shutil.rmtree(app.config["UPLOAD_FOLDER"])
-            os.makedirs(app.config["UPLOAD_FOLDER"])
-
-        # 5. Clear Logs
+        # 3. Clear Logs
         if os.path.exists(ATTENDANCE_FILE):
             os.remove(ATTENDANCE_FILE)
 
@@ -362,5 +345,7 @@ def reset_app():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
-    # app.run(debug=True, port=5000)
+    # Ensure port 5000 is used info
+    print("🚀 Starting Flask App...")
+    print("📂 Model Storage (Temp):", TEMP_DIR)
+    app.run(debug=True, port=5000)
