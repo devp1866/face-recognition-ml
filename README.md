@@ -77,7 +77,11 @@ pip install -r requirements.txt
 
 ### 3️⃣ Setup Models
 
-The system automatically downloads necessary models (Buffalo_L) on first run. Ensure you have an internet connection for the initial launch.
+1.  **Face Recognition**: Models (Buffalo_L) are **automatically downloaded** on first run.
+2.  **Anti-Spoofing**: You must manually download the MiniFASNet model:
+    - [Download minifasv2.onnx](https://github.com/suriAI/face-antispoof-onnx/blob/main/models/best/98.20/best_model.onnx)
+    - Rename it to `minifasv2.onnx`.
+    - Place it in: `face-recognition-ml/resources/models/`
 
 ### 4️⃣ Run the Application
 
