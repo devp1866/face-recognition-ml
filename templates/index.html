@@ -1,128 +1,103 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="fade-in">
-    <!-- Welcome Section -->
-    <div class="text-center mb-12">
-        <h1 class="text-4xl font-extrabold text-white sm:text-5xl sm:tracking-tight lg:text-6xl">
-            Smart Face <span class="text-indigo-500">Attendance</span>
-        </h1>
-        <p class="max-w-xl mx-auto mt-5 text-xl text-slate-400">
-            Secure, fast, and reliable face recognition system for automated attendance tracking.
-        </p>
+<div class="max-w-3xl mx-auto mt-6 px-4 sm:px-6 fade-in space-y-6">
+    <!-- Hero Section -->
+    <div
+        class="relative overflow-hidden rounded-3xl bg-slate-800/40 backdrop-blur-md shadow-2xl border border-white/5 mb-8 group">
+        <div
+            class="absolute -top-10 -right-10 w-40 h-40 bg-indigo-600/30 rounded-full blur-3xl group-hover:bg-indigo-600/40 transition-all duration-500">
+        </div>
+        <div class="relative px-6 py-8 sm:px-10">
+            <h1
+                class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 mb-2">
+                Face Recognition AI
+            </h1>
+            <p class="text-slate-400 text-lg max-w-md leading-relaxed">
+                Secure, local, and real-time attendance system with <span
+                    class="text-white font-medium">anti-spoofing</span> protection.
+            </p>
+        </div>
     </div>
 
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2 mb-12">
-        <!-- Total Users Card -->
-        <div
-            class="bg-slate-800 overflow-hidden shadow-lg rounded-2xl border border-slate-700 hover:border-indigo-500 transition-all duration-300 transform hover:-translate-y-1">
-            <div class="p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 bg-indigo-900/50 rounded-md p-3">
-                        <svg class="h-8 w-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                    </div>
-                    <div class="ml-5 w-0 flex-1">
-                        <dl>
-                            <dt class="text-sm font-medium text-slate-400 truncate">
-                                Total Enrolled Users
-                            </dt>
-                            <dd>
-                                <div class="text-3xl font-bold text-white">
-                                    {{ total_users }}
-                                </div>
-                            </dd>
-                        </dl>
-                    </div>
+    <!-- Stats Grid (Compact) -->
+    <div class="grid grid-cols-2 gap-4">
+        <!-- Users Card -->
+        <div onclick="window.location.href='/users'"
+            class="relative group bg-slate-800/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 cursor-pointer transition-all duration-300 hover:bg-slate-800/60 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/10">
+            <div class="flex flex-col items-center text-center">
+                <div
+                    class="mb-3 p-3 bg-indigo-500/10 rounded-full text-indigo-400 group-hover:scale-110 transition-transform duration-300">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
                 </div>
-            </div>
-            <div class="bg-slate-700/50 px-5 py-3">
-                <div class="text-sm">
-                    <a href="/users" class="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
-                        View all users &rarr;
-                    </a>
-                </div>
+                <h3 class="text-3xl font-bold text-white">{{ total_users }}</h3>
+                <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mt-1">Total Users</p>
             </div>
         </div>
 
-        <!-- Attendance Today Card -->
-        <div
-            class="bg-slate-800 overflow-hidden shadow-lg rounded-2xl border border-slate-700 hover:border-green-500 transition-all duration-300 transform hover:-translate-y-1">
-            <div class="p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 bg-green-900/50 rounded-md p-3">
-                        <svg class="h-8 w-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <div class="ml-5 w-0 flex-1">
-                        <dl>
-                            <dt class="text-sm font-medium text-slate-400 truncate">
-                                Attendance Today
-                            </dt>
-                            <dd>
-                                <div class="text-3xl font-bold text-white">
-                                    {{ attendance_count }}
-                                </div>
-                            </dd>
-                        </dl>
-                    </div>
+        <!-- Attendance Card -->
+        <div onclick="window.location.href='/logs'"
+            class="relative group bg-slate-800/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 cursor-pointer transition-all duration-300 hover:bg-slate-800/60 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/10">
+            <div class="flex flex-col items-center text-center">
+                <div
+                    class="mb-3 p-3 bg-emerald-500/10 rounded-full text-emerald-400 group-hover:scale-110 transition-transform duration-300">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
                 </div>
-            </div>
-            <div class="bg-slate-700/50 px-5 py-3">
-                <div class="text-sm">
-                    <a href="/logs" class="font-medium text-green-400 hover:text-green-300 transition-colors">
-                        View logs &rarr;
-                    </a>
-                </div>
+                <h3 class="text-3xl font-bold text-white">{{ attendance_count }}</h3>
+                <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mt-1">Present Today</p>
             </div>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="bg-slate-800 shadow-lg rounded-2xl border border-slate-700 p-8">
-        <h2 class="text-xl font-bold text-white mb-6">Quick Actions</h2>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <a href="/enroll"
-                class="relative block rounded-xl border border-slate-600 bg-slate-700/30 px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-indigo-500 hover:bg-slate-700 transition-all duration-200 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
-                <div class="flex-shrink-0">
-                    <div class="h-10 w-10 rounded-full bg-indigo-900/50 flex items-center justify-center">
-                        <svg class="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                    </div>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <span class="absolute inset-0" aria-hidden="true"></span>
-                    <p class="text-sm font-medium text-white">Enroll New Person</p>
-                    <p class="text-sm text-slate-400 truncate">Add a new user to the database</p>
-                </div>
-            </a>
+    <!-- Quick Launch -->
+    <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider pl-1 pt-4">Quick Launch</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <a href="/enroll"
+            class="group relative flex items-center p-4 bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border border-white/5 rounded-2xl hover:border-indigo-500/30 hover:shadow-lg transition-all duration-300 overflow-hidden">
+            <div class="absolute right-0 bottom-0 opacity-10 transform translate-x-4 translate-y-4">
+                <svg class="h-24 w-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+            </div>
+            <div
+                class="p-3 bg-indigo-500 rounded-xl text-white shadow-lg mr-4 group-hover:rotate-6 transition-transform">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+            </div>
+            <div>
+                <h3 class="font-bold text-white text-lg">Enroll New Face</h3>
+                <p class="text-xs text-indigo-200 mt-0.5">Add person to database</p>
+            </div>
+        </a>
 
-            <a href="/attendance"
-                class="relative block rounded-xl border border-slate-600 bg-slate-700/30 px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-green-500 hover:bg-slate-700 transition-all duration-200 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500">
-                <div class="flex-shrink-0">
-                    <div class="h-10 w-10 rounded-full bg-green-900/50 flex items-center justify-center">
-                        <svg class="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                    </div>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <span class="absolute inset-0" aria-hidden="true"></span>
-                    <p class="text-sm font-medium text-white">Mark Attendance</p>
-                    <p class="text-sm text-slate-400 truncate">Upload photo to check attendance</p>
-                </div>
-            </a>
-        </div>
+        <a href="/attendance"
+            class="group relative flex items-center p-4 bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border border-white/5 rounded-2xl hover:border-emerald-500/30 hover:shadow-lg transition-all duration-300 overflow-hidden">
+            <div class="absolute right-0 bottom-0 opacity-10 transform translate-x-4 translate-y-4">
+                <svg class="h-24 w-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div
+                class="p-3 bg-emerald-500 rounded-xl text-white shadow-lg mr-4 group-hover:rotate-6 transition-transform">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                </svg>
+            </div>
+            <div>
+                <h3 class="font-bold text-white text-lg">Scan Attendance</h3>
+                <p class="text-xs text-emerald-200 mt-0.5">Use Webcam or Upload</p>
+            </div>
+        </a>
     </div>
 </div>
 {% endblock %}

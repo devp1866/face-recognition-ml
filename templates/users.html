@@ -1,77 +1,111 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto mt-10 px-4 sm:px-6 lg:px-8 fade-in">
-    <div class="sm:flex sm:items-center">
-        <div class="sm:flex-auto">
-            <h1 class="text-2xl font-bold text-white">Enrolled Users</h1>
-            <p class="mt-2 text-sm text-slate-400">A list of all users currently enrolled in the face recognition
-                system.</p>
+<div class="max-w-4xl mx-auto px-4 fade-in">
+    <!-- Header -->
+    <div class="flex justify-between items-end mb-6">
+        <div>
+            <h1 class="text-3xl font-extrabold text-white">User Directory</h1>
+            <p class="text-slate-400 text-sm mt-1">Manage enrolled identities.</p>
         </div>
-        <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-            <a href="/enroll"
-                class="inline-flex items-center justify-center rounded-lg border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto transition-colors">
-                Add User
-            </a>
-        </div>
+        <a href="/enroll"
+            class="inline-flex items-center px-4 py-2 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 hover:shadow-indigo-500/25">
+            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd"
+                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                    clip-rule="evenodd" />
+            </svg>
+            Enroll New
+        </a>
     </div>
 
-    <div class="mt-8 flex flex-col">
-        <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-            <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-                <div
-                    class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg border border-slate-700">
-                    <table class="min-w-full divide-y divide-slate-700">
-                        <thead class="bg-slate-800">
-                            <tr>
-                                <th scope="col"
-                                    class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6">ID</th>
-                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Name</th>
-                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Created
-                                    At</th>
-                                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                                    <span class="sr-only">Actions</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-700 bg-slate-900">
-                            {% for user in users %}
-                            <tr class="hover:bg-slate-800/50 transition-colors">
-                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6">{{
-                                    user.id }}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-300">{{ user.name }}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-400">{{ user.created_at }}
-                                </td>
-                                <td
-                                    class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                    <form action="/delete_user/{{ user.id }}" method="post"
-                                        onsubmit="return confirm('Are you sure you want to delete {{ user.name }}?');"
-                                        class="inline">
-                                        <button type="submit"
-                                            class="text-red-400 hover:text-red-300 transition-colors flex items-center justify-end ml-auto">
-                                            <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"
-                                                stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                            Delete
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="px-6 py-10 text-center text-sm text-slate-500">
-                                    No users enrolled yet. <a href="/enroll"
-                                        class="text-indigo-400 hover:text-indigo-300">Enroll someone</a> to get started.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+    <!-- Users Table Card -->
+    <div class="bg-slate-800/40 backdrop-blur-md shadow-2xl rounded-3xl overflow-hidden border border-white/5">
+        {% if users %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-700/50">
+                <thead class="bg-slate-900/50">
+                    <tr>
+                        <th scope="col"
+                            class="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            Identity
+                        </th>
+                        <th scope="col"
+                            class="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            Enrollment Date
+                        </th>
+                        <th scope="col" class="relative px-6 py-4">
+                            <span class="sr-only">Actions</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700/50">
+                    {% for user in users %}
+                    <tr class="hover:bg-white/5 transition-colors group">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div
+                                        class="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                                        {{ user.name[0]|upper }}
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-white">{{ user.name }}</div>
+                                    <div class="text-xs text-slate-500">ID: {{ user.id }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span
+                                class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                                {{ user.created_at }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <form action="/delete_user/{{ user.id }}" method="post"
+                                onsubmit="return confirm('Delete {{ user.name }}? This cannot be undone.');"
+                                class="inline-block">
+                                <button type="submit"
+                                    class="text-slate-500 hover:text-red-400 transition-all p-2 rounded-lg hover:bg-red-500/10 group-hover:opacity-100 opacity-60">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-16 px-4">
+            <div
+                class="mx-auto h-24 w-24 text-slate-600 mb-4 bg-slate-800/50 rounded-full flex items-center justify-center">
+                <svg class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+            </div>
+            <h3 class="mt-2 text-lg font-medium text-white">No users enrolled</h3>
+            <p class="mt-1 text-sm text-slate-400 max-w-sm mx-auto">Get started by adding people to the face recognition
+                database.</p>
+            <div class="mt-6">
+                <a href="/enroll"
+                    class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                        fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                            clip-rule="evenodd" />
+                    </svg>
+                    Enroll First User
+                </a>
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

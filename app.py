@@ -6,6 +6,12 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import datetime
 import tempfile
 
+# SETUP INSIGHTFACE HOME BEFORE IMPORTS
+# This ensures InsightFace uses the local resources folder instead of user home
+insightface_home = os.path.join(os.getcwd(), "resources")
+os.environ["INSIGHTFACE_HOME"] = insightface_home
+print(f"🔧 CONFIG: Set INSIGHTFACE_HOME = {insightface_home}")
+
 # Helper Core Modules
 from core.recognition import FaceEngine
 from core.storage import (
@@ -23,7 +29,6 @@ app.secret_key = "supersecretkey"  # Required for flash messages
 
 # Use temp directory for Vercel/Render/AWS compatibility (Ephemeral storage)
 TEMP_DIR = tempfile.gettempdir()
-os.environ["INSIGHTFACE_HOME"] = TEMP_DIR  # Set home for model downloads
 
 app.config["UPLOAD_FOLDER"] = os.path.join(TEMP_DIR, "uploads")
 app.config["RESULT_FOLDER"] = os.path.join(TEMP_DIR, "results")
@@ -183,15 +188,7 @@ def attendance():
         upload_path = os.path.join(app.config["UPLOAD_FOLDER"], upload_filename)
         cv2.imwrite(upload_path, img)
 
-        # 3. Recognize Faces using Core Engine
-        # This handles detection, recognition, and drawing bounding boxes
-        out_img, results = face_engine.recognize_faces(
-            img, known_embeddings, ids, names
-        )
-        # 4. Mark Attendance for recognized users
-        # NOTE: We re-implement specific attendance marking logic here to ensure
-        # we have access to the User ID, which is required for the database.
-
+        # 3. Recognize Faces using Core Engine Logic (Custom Loop for App)
         faces = face_engine.get_faces(img)
         out_img = img.copy()
         results = []
@@ -203,46 +200,92 @@ def attendance():
             known_norm = known_embeddings / norms
 
         for face in faces:
-            # ... drawing logic ...
-            # ... matching logic ...
-
             box = face.bbox.astype(int)
             x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
 
+            # 1. Liveness Check
+            source = request.form.get("source", "upload")
+            if source == "upload":
+                # User Requirement: Skip spoof checks for upload files, assume Real
+                is_real = True
+                live_score = 1.0
+                live_label = "Real"
+            else:
+                is_real, live_score, live_label = face_engine.check_liveness(img, box)
+
+            # Draw Box & Color
+            # Default: Red (Unknown or Spoof)
+            color = (0, 0, 255)
             name = "Unknown"
             best_score = 0.0
-            color = (0, 0, 255)
 
             if known_norm is not None:
                 emb = face.embedding
                 emb_norm = emb / np.linalg.norm(emb)
+
                 sims = np.dot(known_norm, emb_norm)
                 best_idx = np.argmax(sims)
                 best_score = float(sims[best_idx])
 
-                if best_score >= 0.40:
+                if best_score >= 0.40:  # Threshold
                     user_id = ids[best_idx]
-                    name = names[user_id]
-                    color = (0, 200, 0)
-                    mark_attendance_csv(user_id, name)
+                    # FIX: Use user_id to look up name, NOT the index
+                    name_candidate = names.get(user_id, "Unknown")
 
-            label = f"{name} ({best_score:.2f})"
+                    # LOGIC: Only Mark Attendance if REAL
+                    if is_real:
+                        name = name_candidate
+                        color = (0, 200, 0)  # Green for Match
+
+                        # Mark Attendance (CSV Logic)
+                        mark_attendance_csv(user_id, name)
+                    else:
+                        name = f"SPOOF: {name_candidate}"
+                        color = (0, 0, 255)  # Red for Spoof Match
+
+            # If not matched but Real -> Unknown (Red)
+            # If Spoof -> Display "SPOOF"
+
+            if not is_real:
+                label_text = f"SPOOF ({live_score:.2f})"
+                color = (0, 0, 255)
+            else:
+                label_text = f"{name} ({best_score:.2f})"
+
+            # Visualize
+            results.append(
+                {
+                    "name": name,
+                    "score": best_score,
+                    "is_real": is_real,
+                    "liveness": live_score,
+                }
+            )
+
             cv2.rectangle(out_img, (x1, y1), (x2, y2), color, 2)
             cv2.putText(
-                out_img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2
+                out_img,
+                label_text,
+                (x1, y1 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                color,
+                2,
             )
-            results.append({"name": name, "score": best_score})
 
         # Save Result
         filename = f"result_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
         save_path = os.path.join(app.config["RESULT_FOLDER"], filename)
         cv2.imwrite(save_path, out_img)
 
+        # Determine if request came from webcam
+        source = request.form.get("source", "upload")
+
         return render_template(
-            "attendance.html", result_image=filename, results=results
+            "attendance.html", result_image=filename, results=results, active_tab=source
         )
 
-    return render_template("attendance.html")
+    return render_template("attendance.html", active_tab="upload")
 
 
 @app.route("/logs")
@@ -347,5 +390,8 @@ def reset_app():
 if __name__ == "__main__":
     # Ensure port 5000 is used info
     print("🚀 Starting Flask App...")
-    print("📂 Model Storage (Temp):", TEMP_DIR)
+    print(f"📂 Runtime Storage (Uploads/Results): {TEMP_DIR}")
+    print(f"🧠 AI Model Storage (Weights): {os.environ.get('INSIGHTFACE_HOME')}")
     app.run(debug=True, port=5000)
+    # Production Configuration
+    # app.run(host="0.0.0.0", port=5000, debug=False)

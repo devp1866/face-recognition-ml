@@ -3,9 +3,33 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Smart Face - Advanced Face Recognition Attendance System">
-    <meta name="keywords" content="face recognition, attendance system, AI, machine learning, insightface, opencv, python, flask">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description"
+        content="Smart Face - Secure, Local-First AI Face Recognition Attendance System. Powered by ArcFace and Anti-Spoofing technology.">
+    <meta name="keywords"
+        content="face recognition, attendance system, AI, machine learning, insightface, opencv, python, flask, anti-spoofing, biometrics">
+    <meta name="author" content="Devkumar Patel">
+    <meta name="theme-color" content="#0f172a">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://smartface.app/">
+    <meta property="og:title" content="Smart Face | AI Attendance">
+    <meta property="og:description"
+        content="Secure, Local-First AI Face Recognition Attendance System. Privacy-focused and production-ready.">
+    <meta property="og:image"
+        content="https://ui-avatars.com/api/?name=Smart+Face&background=4f46e5&color=fff&size=512">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://smartface.app/">
+    <meta property="twitter:title" content="Smart Face | AI Attendance">
+    <meta property="twitter:description"
+        content="Secure, Local-First AI Face Recognition Attendance System. Privacy-focused and production-ready.">
+    <meta property="twitter:image"
+        content="https://ui-avatars.com/api/?name=Smart+Face&background=4f46e5&color=fff&size=512">
+
     <title>Smart Face | AI Attendance</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -48,95 +72,122 @@
                 transform: translateY(0);
             }
         }
+
+        /* Utility to Hide Scrollbar but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
     </style>
 </head>
 
-<body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+<body
+    class="bg-slate-900 text-slate-200 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white relative overflow-x-hidden">
+    <!-- Ambient Background Effects -->
+    <div class="fixed inset-0 z-0 pointer-events-none">
+        <div
+            class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-900/20 rounded-full blur-[120px] mix-blend-screen opacity-40 animate-pulse">
+        </div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-900/20 rounded-full blur-[120px] mix-blend-screen opacity-40 animate-pulse"
+            style="animation-delay: 2s"></div>
+    </div>
 
-    <!-- Navbar -->
-    <nav class="bg-slate-800 shadow-lg border-b border-slate-700 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex">
-                    <div class="flex-shrink-0 flex items-center">
-                        <div class="bg-indigo-600 p-1.5 rounded-lg mr-2">
-                            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <span class="font-bold text-xl text-white tracking-tight">Smart Face</span>
-                    </div>
-                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                        <a href="/"
-                            class="border-transparent text-slate-300 hover:text-white hover:border-indigo-500 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200">
-                            Dashboard
-                        </a>
-                        <a href="/enroll"
-                            class="border-transparent text-slate-300 hover:text-white hover:border-indigo-500 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200">
-                            Enroll
-                        </a>
-                        <a href="/attendance"
-                            class="border-transparent text-slate-300 hover:text-white hover:border-indigo-500 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200">
-                            Attendance
-                        </a>
-                        <a href="/logs"
-                            class="border-transparent text-slate-300 hover:text-white hover:border-indigo-500 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200">
-                            Logs
-                        </a>
-                        <a href="/users"
-                            class="border-transparent text-slate-300 hover:text-white hover:border-indigo-500 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200">
-                            Users
-                        </a>
-                        <a href="/about"
-                            class="border-transparent text-slate-300 hover:text-white hover:border-indigo-500 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200">
-                            About
-                        </a>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <button onclick="document.getElementById('reset-modal').classList.remove('hidden')"
-                        class="bg-red-600/90 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-md hover:shadow-red-900/50 flex items-center">
-                        <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <!-- Top Header (Minimalist) -->
+    <header class="sticky top-0 z-40 w-full backdrop-blur-xl bg-slate-900/60 border-b border-white/5">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Brand -->
+                <div class="flex-shrink-0 flex items-center group cursor-pointer" onclick="window.location.href='/'">
+                    <div
+                        class="bg-gradient-to-tr from-indigo-500 to-purple-500 p-2 rounded-xl mr-3 shadow-lg shadow-indigo-500/20 transition-transform group-hover:scale-105 duration-300">
+                        <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Reset App
-                    </button>
-                    <!-- Mobile menu button -->
-                    <div class="-mr-2 flex items-center sm:hidden">
-                        <button type="button"
-                            onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
-                            class="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
-                            aria-controls="mobile-menu" aria-expanded="false">
-                            <span class="sr-only">Open main menu</span>
-                            <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        </button>
                     </div>
+                    <span
+                        class="font-bold text-lg text-white tracking-tight group-hover:text-indigo-200 transition-colors">Smart
+                        Face</span>
                 </div>
+
+                <!-- Right Actions -->
+                <button onclick="document.getElementById('reset-modal').classList.remove('hidden')"
+                    class="group bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-300 border border-red-500/20 hover:border-red-500/50 flex items-center gap-2">
+                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Reset
+                </button>
             </div>
         </div>
+    </header>
 
-        <!-- Mobile Menu -->
-        <div class="sm:hidden hidden bg-slate-800 border-t border-slate-700" id="mobile-menu">
-            <div class="pt-2 pb-3 space-y-1">
-                <a href="/"
-                    class="text-slate-300 hover:bg-slate-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Dashboard</a>
-                <a href="/enroll"
-                    class="text-slate-300 hover:bg-slate-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Enroll</a>
-                <a href="/attendance"
-                    class="text-slate-300 hover:bg-slate-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Attendance</a>
-                <a href="/logs"
-                    class="text-slate-300 hover:bg-slate-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Logs</a>
-                <a href="/users"
-                    class="text-slate-300 hover:bg-slate-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Users</a>
-                <a href="/about"
-                    class="text-slate-300 hover:bg-slate-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">About</a>
-            </div>
+    <!-- Bottom Pill Navigation (Floating) -->
+    <nav class="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none fade-in">
+        <div
+            class="pointer-events-auto bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-full px-2 py-2 shadow-2xl flex items-center gap-1 sm:gap-2">
+
+            <!-- Dashboard -->
+            <a href="/"
+                class="relative px-4 py-3 rounded-full transition-all duration-300 hover:bg-white/5 {{ 'text-white bg-indigo-600 shadow-lg shadow-indigo-500/40' if request.path == '/' else 'text-slate-400 hover:text-white' }}">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+            </a>
+
+            <!-- Enroll -->
+            <a href="/enroll"
+                class="relative px-4 py-3 rounded-full transition-all duration-300 hover:bg-white/5 {{ 'text-white bg-pink-600 shadow-lg shadow-pink-500/40' if request.path == '/enroll' else 'text-slate-400 hover:text-white' }}">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+            </a>
+
+            <!-- Attendance -->
+            <a href="/attendance"
+                class="relative px-4 py-3 rounded-full transition-all duration-300 hover:bg-white/5 {{ 'text-white bg-teal-600 shadow-lg shadow-teal-500/40' if request.path == '/attendance' else 'text-slate-400 hover:text-white' }}">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </a>
+
+            <!-- Logs -->
+            <a href="/logs"
+                class="relative px-4 py-3 rounded-full transition-all duration-300 hover:bg-white/5 {{ 'text-white bg-amber-600 shadow-lg shadow-amber-500/40' if request.path == '/logs' else 'text-slate-400 hover:text-white' }}">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+            </a>
+
+            <!-- Users -->
+            <a href="/users"
+                class="relative px-4 py-3 rounded-full transition-all duration-300 hover:bg-white/5 {{ 'text-white bg-blue-600 shadow-lg shadow-blue-500/40' if request.path == '/users' else 'text-slate-400 hover:text-white' }}">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+            </a>
+
+            <!-- About -->
+            <a href="/about"
+                class="relative px-4 py-3 rounded-full transition-all duration-300 hover:bg-white/5 {{ 'text-white bg-purple-600 shadow-lg shadow-purple-500/40' if request.path == '/about' else 'text-slate-400 hover:text-white' }}">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </a>
+
         </div>
     </nav>
 
@@ -148,7 +199,7 @@
                 onclick="document.getElementById('reset-modal').classList.add('hidden')"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div
-                class="inline-block align-bottom bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-700">
+                class="inline-block align-bottom bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-700">
                 <div class="bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="sm:flex sm:items-start">
                         <div
@@ -163,7 +214,8 @@
                             <div class="mt-2">
                                 <p class="text-sm text-slate-400">Are you sure you want to reset the app? This will
                                     <span class="text-red-400 font-semibold">permanently delete</span> ALL users,
-                                    images, and logs. This action cannot be undone.</p>
+                                    images, and logs. This action cannot be undone.
+                                </p>
                                 <p class="text-sm text-slate-400 mt-2">Type <strong
                                         class="text-white bg-slate-700 px-1 rounded">RESTART</strong> to confirm.</p>
                             </div>
@@ -191,11 +243,12 @@
     </div>
 
     <!-- Content -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+    <main
+        class="{{ 'flex-grow w-full relative z-10 overflow-y-auto flex flex-col pb-28 no-scrollbar' if request.path == '/about' else 'flex-grow max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full pb-24 relative z-10' }}">
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-        <div class="mb-6 fade-in">
+        <div class="mb-6 fade-in px-4 mt-4 max-w-6xl mx-auto w-full">
             {% for category, message in messages %}
             <div
                 class="rounded-lg p-4 mb-3 border {{ 'bg-green-900/30 border-green-800 text-green-300' if category == 'success' else 'bg-red-900/30 border-red-800 text-red-300' }} shadow-sm">
@@ -228,26 +281,10 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-slate-800 border-t border-slate-700 mt-auto">
-        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <div class="md:flex md:items-center md:justify-between">
-                <div class="flex justify-center md:justify-start space-x-6">
-                    <a href="https://github.com/devp1866" class="text-slate-400 hover:text-indigo-400">
-                        <span class="sr-only">GitHub</span>
-                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fill-rule="evenodd"
-                                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                                clip-rule="evenodd" />
-                        </svg>
-                    </a>
-                </div>
-                <div class="mt-8 md:mt-0 md:order-1">
-                    <p class="text-center text-sm text-slate-500">&copy; 2025 Smart Face. Built with ❤️ and Python.</p>
-                </div>
-            </div>
-        </div>
-    </footer>
+    <!-- Footer Removed as per user request -->
+    <!-- 
+    <footer class="bg-slate-800 border-t border-slate-700 mt-auto"> ... </footer>
+    -->
 
 </body>
 

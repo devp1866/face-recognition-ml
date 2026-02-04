@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Flask & Web
+instance/
+.webassets-cache
+
+# Database
+*.sqlite3
+*.db
+!database.py
+
+# Face Detection Data (Local)
+# Comment these out if you want to track them, but usually data is excluded
+models/
+# We keep resources/ if they are assets, but maybe not large models if user prefers.
+# Assuming resources/antispoof_models is tracked for now as it's part of the codebase.
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
