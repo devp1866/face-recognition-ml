@@ -392,6 +392,6 @@ if __name__ == "__main__":
     print("🚀 Starting Flask App...")
     print(f"📂 Runtime Storage (Uploads/Results): {TEMP_DIR}")
     print(f"🧠 AI Model Storage (Weights): {os.environ.get('INSIGHTFACE_HOME')}")
-    # app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000)
     # Production Configuration
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    # app.run(host="0.0.0.0", port=5000, debug=False)
