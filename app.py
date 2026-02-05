@@ -25,7 +25,7 @@ from core.storage import (
 )
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"  # Required for flash messages
+app.secret_key = "supersecretkey"
 
 # Use temp directory for Vercel/Render/AWS compatibility (Ephemeral storage)
 TEMP_DIR = tempfile.gettempdir()
@@ -33,14 +33,13 @@ TEMP_DIR = tempfile.gettempdir()
 app.config["UPLOAD_FOLDER"] = os.path.join(TEMP_DIR, "uploads")
 app.config["RESULT_FOLDER"] = os.path.join(TEMP_DIR, "results")
 app.config["DATASET_FOLDER"] = os.path.join(TEMP_DIR, "dataset")
-app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024  # 128MB max upload
+app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024
 
-# Ensure directories exist
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 os.makedirs(app.config["RESULT_FOLDER"], exist_ok=True)
 os.makedirs(app.config["DATASET_FOLDER"], exist_ok=True)
 
-# Initialize Core AI Engine
+
 # Using 'buffalo_l' for high quality as requested for deployment
 face_engine = FaceEngine(model_name="buffalo_l", ctx_id=0, det_size=(640, 640))
 
@@ -150,13 +149,14 @@ def enroll():
         user_id = add_user(name, avg_embedding)
 
         # Save Reference Images (Optional, for visual confirmation)
-        user_dir = os.path.join(app.config["DATASET_FOLDER"], str(user_id))
-        if not os.path.exists(user_dir):
-            os.makedirs(user_dir, exist_ok=True)
-
-        for idx, img in enumerate(valid_images):
-            save_path = os.path.join(user_dir, f"{name}_{idx+1}.jpg")
-            cv2.imwrite(save_path, img)
+        # aws-free-tier-optimization: Disabled to save storage space. Only embeddings are stored.
+        # user_dir = os.path.join(app.config["DATASET_FOLDER"], str(user_id))
+        # if not os.path.exists(user_dir):
+        #     os.makedirs(user_dir, exist_ok=True)
+        #
+        # for idx, img in enumerate(valid_images):
+        #     save_path = os.path.join(user_dir, f"{name}_{idx+1}.jpg")
+        #     cv2.imwrite(save_path, img)
 
         flash(f"Successfully enrolled {name} (ID: {user_id})", "success")
         return redirect(url_for("enroll"))
@@ -392,6 +392,6 @@ if __name__ == "__main__":
     print("🚀 Starting Flask App...")
     print(f"📂 Runtime Storage (Uploads/Results): {TEMP_DIR}")
     print(f"🧠 AI Model Storage (Weights): {os.environ.get('INSIGHTFACE_HOME')}")
-    app.run(debug=True, port=5000)
+    # app.run(debug=True, port=5000)
     # Production Configuration
-    # app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=5000, debug=False)

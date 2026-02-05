@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Face Recognition Data
+# We exclude local runtime data so the container starts fresh or assumes mounted volumes
+# However, for a simple deployment, we might want to copy resources/models if they are verified.
+# Excluding temp/runtime folders:
+instance/
+.webassets-cache
+.pytest_cache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+DEPLOYMENT.md
+implementation_plan.md
+task.md
+walkthrough.md
+README.md
