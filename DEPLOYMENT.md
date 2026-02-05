@@ -104,7 +104,7 @@ sudo swapon /swapfile
 # Create directories
 mkdir -p resources/models
 # Download MiniFASNet
-wget -O resources/models/minifasv2.onnx https://github.com/suriAI/face-antispoof-onnx/blob/main/models/best/98.20/best_model.onnx
+wget -O resources/models/minifasv2.onnx https://github.com/suriAI/face-antispoof-onnx/raw/main/models/best/98.20/best_model.onnx
 
 # 4. Build Docker Image (Takes ~5-10 mins)
 docker build -t smartface .
