@@ -8,11 +8,14 @@ from core.antispoof import AntiSpoofDet
 
 
 class FaceEngine:
+
+    DEFAULT_THRESHOLD = 0.50
+
     def __init__(self, model_name="buffalo_l", ctx_id=0, det_size=(640, 640)):
         """
         Initialize the InsightFace model and Anti-Spoofing model.
         """
-        print(f"🧠 Initializing FaceEngine with model: {model_name}")
+        print(f"Initializing FaceEngine with model: {model_name}")
         # Explicitly pass 'root' to force download/load from resources folder
         resources_path = os.path.join(os.getcwd(), "resources")
         self.app = FaceAnalysis(
@@ -27,7 +30,7 @@ class FaceEngine:
                 os.remove(zip_path)
                 print(f"🧹 Cleanup: Removed temporary file {model_name}.zip")
         except Exception as e:
-            print(f"⚠️ Warning: Could not remove zip file: {e}")
+            print(f" Warning: Could not remove zip file: {e}")
 
         # Initialize Liveness Detector
         spoof_model_path = os.path.join(
@@ -35,10 +38,10 @@ class FaceEngine:
         )
         self.spoof_det = None
         if os.path.exists(spoof_model_path):
-            print("🛡️ Initializing Anti-Spoofing Model...")
+            print(" Initializing Anti-Spoofing Model...")
             self.spoof_det = AntiSpoofDet(spoof_model_path)
         else:
-            print(f"⚠️ Warning: Anti-Spoofing model not found at {spoof_model_path}")
+            print(f" Warning: Anti-Spoofing model not found at {spoof_model_path}")
 
     def process_image(self, image_bytes):
         """Decode image bytes and return image array."""
@@ -49,7 +52,7 @@ class FaceEngine:
     def get_faces(self, img):
         """
         Detect faces in the image.
-        Returns a list of InsightFace objects (containing bbox, embedding, etc.)
+        Returns a list of InsightFace face objects (containing bbox, embedding, etc.)
         """
         if img is None:
             return []
@@ -64,7 +67,7 @@ class FaceEngine:
         if not faces:
             return None, None
 
-        # Pick largest face
+        # Pick the largest face by bounding-box area
         face = max(
             faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1])
         )
@@ -72,8 +75,14 @@ class FaceEngine:
 
     def check_liveness(self, img, bbox):
         """
-        Check if a face is Real or Fake/Spoof.
-        Returns: (is_real: bool, score: float, label: str)
+        Check if a face region is Real or Fake/Spoof.
+
+        Args:
+            img:   Full BGR image
+            bbox:  Face bounding box [x1, y1, x2, y2]
+
+        Returns:
+            (is_real: bool, score: float, label: str)
         """
         if not self.spoof_det:
             return True, 1.0, "Real (No Model)"
@@ -82,16 +91,47 @@ class FaceEngine:
         is_real = label == "Real"
         return is_real, score, label
 
-    def recognize_faces(self, img, known_embeddings, ids, names, threshold=0.40):
+    def recognize_faces(
+        self,
+        img,
+        known_embeddings,
+        ids,
+        names,
+        threshold=None,
+        skip_liveness=False,
+    ):
         """
-        Detect and recognize faces in the image against known embeddings.
-        Also performs Liveness Detection.
+        Detect, recognize, and optionally check liveness for all faces in an image.
+
+        Args:
+            img:              BGR image (numpy array)
+            known_embeddings: (N, D) array of enrolled face embeddings
+            ids:              List of user IDs corresponding to known_embeddings rows
+            names:            Dict mapping user_id → name
+            threshold:        Cosine similarity threshold. Defaults to DEFAULT_THRESHOLD (0.50).
+            skip_liveness:    If True, liveness check is skipped and all faces treated as Real.
+                              Use for uploaded images where liveness is meaningless.
+
+        Returns:
+            out_img:  Annotated copy of the image with bounding boxes and labels drawn.
+            results:  List of dicts, one per detected face:
+                        {
+                          "user_id":  int | None,
+                          "name":     str,
+                          "score":    float,   # cosine similarity (0–1)
+                          "box":      [x1, y1, x2, y2],
+                          "is_real":  bool,
+                          "liveness": float,   # real probability from antispoof
+                        }
         """
+        if threshold is None:
+            threshold = self.DEFAULT_THRESHOLD
+
         faces = self.get_faces(img)
         out_img = img.copy()
         results = []
 
-        # Pre-normalize known embeddings if they exist
+        # Pre-normalize known embeddings once (avoids repeated division in the loop)
         known_norm = None
         if known_embeddings is not None and known_embeddings.size > 0:
             norms = np.linalg.norm(known_embeddings, axis=1, keepdims=True)
@@ -101,68 +141,80 @@ class FaceEngine:
             box = face.bbox.astype(int)
             x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
 
-            # 1. Check Liveness
-            is_real = True
-            liveness_score = 0.0
-            liveness_label = "Real"
+            #  Liveness check 
+            if skip_liveness:
+                # TESTING: Liveness check intentionally disabled for this source.
+                is_real = True
+                liveness_score = 1.0
+                liveness_label = "Real (Skipped)"
+            else:
+                if self.spoof_det:
+                    liveness_label, liveness_score = self.spoof_det.predict(img, box)
+                    is_real = liveness_label == "Real"
+                else:
+                    is_real = True
+                    liveness_score = 1.0
+                    liveness_label = "Real (No Model)"
 
-            if self.spoof_det:
-                liveness_label, liveness_score = self.spoof_det.predict(img, box)
-                if liveness_label == "Fake":
-                    is_real = False
-
+            # Identity recognition
+            matched_user_id = None
             name = "Unknown"
             best_score = 0.0
-            color = (0, 0, 255)  # Red default
-
-            # 2. Recognize only if Real (or strict mode)
-            # We will still process recognition but label as FAKE if spoofed
+            color = (0, 0, 255)  # Red default (unknown / spoof)
 
             if known_norm is not None:
                 emb = face.embedding
                 emb_norm = emb / np.linalg.norm(emb)
 
                 sims = np.dot(known_norm, emb_norm)
-                best_idx = np.argmax(sims)
+                best_idx = int(np.argmax(sims))
                 best_score = float(sims[best_idx])
 
                 if best_score >= threshold:
-                    user_id = ids[best_idx]
-                    name_candidate = names.get(user_id, "Unknown")
+                    candidate_id = ids[best_idx]
+                    name_candidate = names.get(candidate_id, "Unknown")
 
                     if is_real:
+                        # Confirmed: real person + recognised → green
+                        matched_user_id = candidate_id
                         name = name_candidate
-                        color = (0, 200, 0)  # Green for Match + Real
+                        color = (0, 200, 0)
                     else:
+                        # Spoof attempt by a known person → orange warning
                         name = f"FAKE: {name_candidate}"
-                        color = (0, 165, 255)  # Orange for Spoof Match
+                        color = (0, 165, 255)
 
-            # Override if Spoof
+            # Override to red if spoofing regardless of match
             if not is_real:
-                color = (0, 0, 0)  # Black/Warning for Spoof
-                # Or keep Orange/Red
+                color = (0, 0, 255)
 
-            # Display Label
+            # Build display label
             if is_real:
-                label = f"{name} ({best_score:.2f})"
+                label_text = f"{name} ({best_score:.2f})"
             else:
-                label = f"SPOOF ({liveness_score:.2f})"
-                color = (0, 0, 255)  # Red for spoof
+                label_text = f"SPOOF ({liveness_score:.2f})"
+
+            # Draw on image 
+            cv2.rectangle(out_img, (x1, y1), (x2, y2), color, 2)
+            cv2.putText(
+                out_img,
+                label_text,
+                (x1, y1 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                color,
+                2,
+            )
 
             results.append(
                 {
+                    "user_id": matched_user_id,
                     "name": name,
                     "score": best_score,
                     "box": [x1, y1, x2, y2],
                     "is_real": is_real,
                     "liveness": liveness_score,
                 }
-            )
-
-            # Draw
-            cv2.rectangle(out_img, (x1, y1), (x2, y2), color, 2)
-            cv2.putText(
-                out_img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2
             )
 
         return out_img, results

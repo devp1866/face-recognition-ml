@@ -28,6 +28,19 @@
     <div id="section-upload"
         class="bg-slate-800/40 backdrop-blur-md rounded-2xl shadow-xl border border-white/5 overflow-hidden transition-all duration-500">
         <div class="p-6">
+            <!-- Testing Notice: Upload Liveness Skipped -->
+            {% if skip_upload_liveness %}
+            <div class="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.876c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p class="text-xs text-amber-300 font-medium">
+                    <span class="font-bold">Testing mode:</span> Liveness check is disabled for uploaded images.
+                </p>
+            </div>
+            {% endif %}
+
             <form action="/attendance" method="post" enctype="multipart/form-data" class="space-y-6">
                 <!-- Drop Zone -->
                 <div class="relative group cursor-pointer">
@@ -66,11 +79,27 @@
     <div id="section-webcam"
         class="hidden bg-slate-800/40 backdrop-blur-md rounded-2xl shadow-xl border border-white/5 overflow-hidden">
         <div class="p-6">
-            <div
-                class="relative bg-black rounded-xl overflow-hidden shadow-2xl aspect-video w-full border border-slate-700">
+
+            <!-- Camera View with Loading Overlay -->
+            <div class="relative bg-black rounded-xl overflow-hidden shadow-2xl aspect-video w-full border border-slate-700">
                 <video id="video-feed" autoplay playsinline class="w-full h-full object-cover"></video>
                 <canvas id="capture-canvas" class="hidden"></canvas>
 
+                <!-- Countdown / Analyzing Overlay -->
+                <div id="capture-overlay"
+                    class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+                    <div id="overlay-icon" class="w-14 h-14 rounded-full bg-teal-500/20 border-2 border-teal-400 flex items-center justify-center">
+                        <svg id="overlay-spinner" class="w-7 h-7 text-teal-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </div>
+                    <p id="overlay-text" class="text-white font-semibold text-sm tracking-wide"></p>
+                    <p id="overlay-sub" class="text-slate-400 text-xs"></p>
+                </div>
+
+                <!-- Capture Button -->
                 <div class="absolute bottom-4 left-0 right-0 text-center pointer-events-auto">
                     <button id="capture-btn" type="button"
                         class="bg-white text-slate-900 rounded-full p-4 shadow-lg hover:scale-110 transition-transform focus:outline-none">
@@ -79,12 +108,22 @@
                 </div>
             </div>
 
+            <!-- Hidden form for submitting frames -->
             <form id="webcam-form" action="/attendance" method="post" enctype="multipart/form-data" class="hidden">
-                <input type="file" name="file" id="webcam-file">
                 <input type="hidden" name="source" value="webcam">
+                <!-- frame_0, frame_1, frame_2 are injected dynamically by JS -->
             </form>
 
-            <div class="mt-4 p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-center">
+            <!-- Multi-frame Notice -->
+            <div class="mt-4 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+                <p class="text-xs font-bold text-indigo-300 uppercase tracking-wide mb-1">🛡️ Anti-Spoofing Active</p>
+                <p class="text-xs text-indigo-100/80 leading-relaxed">
+                    Three frames are captured automatically with a short delay to detect <strong>motion</strong>
+                    and <strong>liveness</strong>. Showing a photo <strong>will be detected</strong>.
+                </p>
+            </div>
+
+            <div class="mt-3 p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-center">
                 <p class="text-xs font-bold text-orange-300 uppercase tracking-wide mb-1">Important</p>
                 <p class="text-xs text-orange-100/80 leading-relaxed">
                     Face must be <strong>clearly visible</strong>. Ensure you <strong>fit in the frame</strong> and use
@@ -170,7 +209,7 @@
 </div>
 
 <script>
-    // Tab Switching Logic
+    // ── Tab Switching ──────────────────────────────────────────────────────────
     function switchTab(tab) {
         const uploadSection = document.getElementById('section-upload');
         const webcamSection = document.getElementById('section-webcam');
@@ -182,32 +221,25 @@
             uploadSection.classList.remove('hidden');
             webcamSection.classList.add('hidden');
 
-            // Style Active Tab
             tabUpload.classList.add('bg-slate-700/50', 'text-white', 'shadow-sm', 'border', 'border-white/5');
             tabUpload.classList.remove('text-slate-400', 'hover:text-white');
-
-            // Style Inactive Tab
             tabWebcam.classList.remove('bg-slate-700/50', 'text-white', 'shadow-sm', 'border', 'border-white/5');
             tabWebcam.classList.add('text-slate-400', 'hover:text-white');
 
-            // Stop Webcam
             if (video.srcObject) {
                 video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
             }
         } else {
             uploadSection.classList.add('hidden');
             webcamSection.classList.remove('hidden');
 
-            // Style Active Tab
             tabWebcam.classList.add('bg-slate-700/50', 'text-white', 'shadow-sm', 'border', 'border-white/5');
             tabWebcam.classList.remove('text-slate-400', 'hover:text-white');
-
-            // Style Inactive Tab
             tabUpload.classList.remove('bg-slate-700/50', 'text-white', 'shadow-sm', 'border', 'border-white/5');
             tabUpload.classList.add('text-slate-400', 'hover:text-white');
 
-            // Start Webcam
-            navigator.mediaDevices.getUserMedia({ video: true })
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
                 .then(stream => { video.srcObject = stream; })
                 .catch(err => {
                     console.error("Webcam Error:", err);
@@ -217,12 +249,11 @@
         }
     }
 
-    // Initialize based on backend state
-    // Initialize based on backend state
+    // Restore tab from server state after form submission
     const activeTab = "{{ active_tab|default('upload') }}";
     switchTab(activeTab === 'webcam' ? 'webcam' : 'upload');
 
-    // Preview Upload Image
+    // ── Upload Image Preview ───────────────────────────────────────────────────
     function previewImage(input) {
         const previewContainer = document.getElementById('preview-container');
         const uploadPlaceholder = document.getElementById('upload-placeholder');
@@ -234,31 +265,111 @@
                 previewImg.src = e.target.result;
                 previewContainer.classList.remove('hidden');
                 uploadPlaceholder.classList.add('hidden');
-            }
+            };
             reader.readAsDataURL(input.files[0]);
         }
     }
 
-    // Capture Webcam
-    document.getElementById('capture-btn').addEventListener('click', function () {
-        const video = document.getElementById('video-feed');
-        const canvas = document.getElementById('capture-canvas');
-        const context = canvas.getContext('2d');
-        const form = document.getElementById('webcam-form');
-        const fileInput = document.getElementById('webcam-file');
+    // ── Multi-Frame Webcam Capture ─────────────────────────────────────────────
+    //
+    // Instead of a single snapshot, we capture 3 frames spaced 400 ms apart.
+    // This gives the backend enough data to:
+    //   1. Run inter-frame motion analysis (a static photo → near-zero variance)
+    //   2. Run multi-scale liveness on the final frame
+    //
+    // Total capture time ≈ 0.8 seconds. A loading overlay is shown.
 
-        if (video.videoWidth > 0 && video.videoHeight > 0) {
+    const FRAME_COUNT = 3;
+    const FRAME_INTERVAL_MS = 400;
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function showOverlay(text, sub = '') {
+        const overlay = document.getElementById('capture-overlay');
+        document.getElementById('overlay-text').textContent = text;
+        document.getElementById('overlay-sub').textContent = sub;
+        overlay.classList.remove('hidden');
+    }
+
+    function hideOverlay() {
+        document.getElementById('capture-overlay').classList.add('hidden');
+    }
+
+    function captureFrameBlob() {
+        return new Promise(resolve => {
+            const video = document.getElementById('video-feed');
+            const canvas = document.getElementById('capture-canvas');
+            const ctx = canvas.getContext('2d');
+
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            canvas.toBlob(function (blob) {
-                const file = new File([blob], "webcam_capture.jpg", { type: "image/jpeg" });
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                fileInput.files = dataTransfer.files;
-                form.submit();
-            }, 'image/jpeg');
+            canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.92);
+        });
+    }
+
+    document.getElementById('capture-btn').addEventListener('click', async function () {
+        const video = document.getElementById('video-feed');
+        const btn = document.getElementById('capture-btn');
+
+        if (!video.videoWidth || !video.videoHeight) {
+            alert("Webcam not ready. Please wait a moment and try again.");
+            return;
+        }
+
+        // Disable button during capture sequence
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+        const blobs = [];
+
+        try {
+            for (let i = 0; i < FRAME_COUNT; i++) {
+                showOverlay(
+                    `Capturing frame ${i + 1} of ${FRAME_COUNT}…`,
+                    'Hold still and look at the camera'
+                );
+                const blob = await captureFrameBlob();
+                blobs.push(blob);
+
+                if (i < FRAME_COUNT - 1) {
+                    await sleep(FRAME_INTERVAL_MS);
+                }
+            }
+
+            showOverlay('Analyzing…', 'Running liveness & motion checks');
+
+            // Build multipart form with all frames
+            const form = document.getElementById('webcam-form');
+            // Clear any previously injected file inputs
+            form.querySelectorAll('input[type="file"]').forEach(el => el.remove());
+
+            const dataTransfer_list = [];
+            for (let i = 0; i < blobs.length; i++) {
+                const file = new File([blobs[i]], `frame_${i}.jpg`, { type: 'image/jpeg' });
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.name = `frame_${i}`;
+
+                // Assign file via DataTransfer
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+
+                form.appendChild(input);
+            }
+
+            form.submit();
+
+        } catch (err) {
+            console.error("Capture error:", err);
+            hideOverlay();
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            alert("Capture failed. Please try again.");
         }
     });
 </script>

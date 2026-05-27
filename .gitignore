@@ -23,7 +23,7 @@ instance/
 
 # Face Detection Data (Local)
 # Comment these out if you want to track them, but usually data is excluded
-models/
+resources/models/buffalo_l/
 # We keep resources/ if they are assets, but maybe not large models if user prefers.
 # Assuming resources/antispoof_models is tracked for now as it's part of the codebase.
 

@@ -2,8 +2,8 @@ import sqlite3
 import numpy as np
 import os
 import tempfile
+from datetime import datetime
 
-# For AWS/Production, you might switch this to a persistent path or RDS connection string
 DB_NAME = os.path.join(tempfile.gettempdir(), "database.db")
 
 
@@ -17,13 +17,13 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             embedding BLOB NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT NOT NULL
         )
     """
     )
     conn.commit()
     conn.close()
-    print(f"✅ Database {DB_NAME} initialized.")
+    print(f" Database {DB_NAME} initialized.")
 
 
 def add_user(name, embedding):
@@ -32,7 +32,12 @@ def add_user(name, embedding):
     c = conn.cursor()
     # Convert numpy array to bytes
     emb_bytes = embedding.astype(np.float32).tobytes()
-    c.execute("INSERT INTO users (name, embedding) VALUES (?, ?)", (name, emb_bytes))
+    # Use local system time (not SQLite CURRENT_TIMESTAMP which is always UTC)
+    local_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.execute(
+        "INSERT INTO users (name, embedding, created_at) VALUES (?, ?, ?)",
+        (name, emb_bytes, local_ts),
+    )
     user_id = c.lastrowid
     conn.commit()
     conn.close()
