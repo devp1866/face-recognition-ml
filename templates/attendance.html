@@ -114,12 +114,13 @@
                 <!-- frame_0, frame_1, frame_2 are injected dynamically by JS -->
             </form>
 
-            <!-- Multi-frame Notice -->
+            <!-- Multi-frame / Blink Detection Notice -->
             <div class="mt-4 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-                <p class="text-xs font-bold text-indigo-300 uppercase tracking-wide mb-1">🛡️ Anti-Spoofing Active</p>
+                <p class="text-xs font-bold text-indigo-300 uppercase tracking-wide mb-1">👁️ Active Liveness — Blink Detection</p>
                 <p class="text-xs text-indigo-100/80 leading-relaxed">
-                    Three frames are captured automatically with a short delay to detect <strong>motion</strong>
-                    and <strong>liveness</strong>. Showing a photo <strong>will be detected</strong>.
+                    After clicking capture, <strong>blink naturally</strong> within 3 seconds.
+                    The system detects genuine eye blinks from facial landmarks —
+                    a photo or phone screen <strong>cannot blink</strong> and will be rejected.
                 </p>
             </div>
 
@@ -279,8 +280,8 @@
     //
     // Total capture time ≈ 0.8 seconds. A loading overlay is shown.
 
-    const FRAME_COUNT = 3;
-    const FRAME_INTERVAL_MS = 400;
+    const FRAME_COUNT = 10;
+    const FRAME_INTERVAL_MS = 300;  // 10 frames × 300 ms = 3 seconds total
 
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -330,7 +331,9 @@
             for (let i = 0; i < FRAME_COUNT; i++) {
                 showOverlay(
                     `Capturing frame ${i + 1} of ${FRAME_COUNT}…`,
-                    'Hold still and look at the camera'
+                    i < 5
+                        ? '👁️ Please blink naturally'
+                        : '👁️ Keep looking at the camera'
                 );
                 const blob = await captureFrameBlob();
                 blobs.push(blob);

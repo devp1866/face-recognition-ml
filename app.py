@@ -46,19 +46,14 @@ os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 os.makedirs(app.config["RESULT_FOLDER"], exist_ok=True)
 os.makedirs(app.config["DATASET_FOLDER"], exist_ok=True)
 
-#  App-Level Constants 
+# ── App-Level Constants ──────────────────────────────────────────────────
 MAX_USERS = 10
 
+# TESTING: Skip liveness for uploaded images (flat files always fail liveness).
+# Set to False to enforce liveness on all sources.
 SKIP_UPLOAD_LIVENESS = True
 
-# Motion detection threshold for webcam multi-frame analysis.
-# Mean absolute pixel difference between frames:
-#   Real face  → ~2–8 (natural micro-motion: breathing, eye movement)
-#   Still photo → ~0–1 (perfectly static)
-# Tune this value based on your webcam / lighting conditions.
-MOTION_THRESHOLD = 1.5
-
-# Attendance log file (CSV)
+# Attendance log
 ATTENDANCE_FILE = os.path.join(TEMP_DIR, "attendance.csv")
 
 # AI Engine
@@ -67,37 +62,6 @@ face_engine = FaceEngine(model_name="buffalo_l", ctx_id=0, det_size=(640, 640))
 
 init_db()
 
-
-def check_motion(frames):
-    """
-    Check whether there is natural motion between a sequence of video frames.
-
-    A real human face produces micro-motion (breathing, eye movement, subtle
-    head shift). A photo or screen held in front of the camera is perfectly
-    static. We exploit this by computing the mean absolute pixel difference
-    between consecutive greyscale frames.
-
-    Args:
-        frames: List of BGR images (numpy arrays) from consecutive captures.
-
-    Returns:
-        True  → motion detected (likely a real person)
-        False → no motion (likely a spoofing attempt with a static image)
-    """
-    if len(frames) < 2:
-        # Cannot compute motion with a single frame — give benefit of the doubt
-        return True
-
-    gray_frames = [
-        cv2.cvtColor(f, cv2.COLOR_BGR2GRAY).astype(np.float32) for f in frames
-    ]
-    diffs = [
-        np.abs(gray_frames[i] - gray_frames[i + 1])
-        for i in range(len(gray_frames) - 1)
-    ]
-    mean_motion = float(np.mean([np.mean(d) for d in diffs]))
-    print(f"🎥 Motion score: {mean_motion:.4f}  (threshold: {MOTION_THRESHOLD})")
-    return mean_motion >= MOTION_THRESHOLD
 
 
 def mark_attendance_csv(user_id, name):
@@ -200,33 +164,62 @@ def attendance():
     if request.method == "POST":
         source = request.form.get("source", "upload")
 
-        # Load known embeddings from DB 
+        # ── Load known embeddings ──────────────────────────────────────────────
         ids, names, known_embeddings = get_all_embeddings()
 
-        # Gather input frames 
-        frames = []
-        motion_ok = True  # Assume motion for upload mode
-
+        # ──────────────────────────────────────────────────────────────
+        # WEBCAM PATH — Active liveness via blink detection
+        # Blink detection using InsightFace 106-point landmarks is the primary gate.
+        # ──────────────────────────────────────────────────────────────
         if source == "webcam":
-            # Multi-frame path: frontend sends frame_0, frame_1, frame_2
-            for i in range(3):
+            # Collect up to 10 frames (JS sends frame_0 … frame_9)
+            frames = []
+            for i in range(10):
                 ff = request.files.get(f"frame_{i}")
                 if ff:
-                    img = face_engine.process_image(ff.read())
-                    if img is not None:
-                        frames.append(img)
+                    frame_img = face_engine.process_image(ff.read())
+                    if frame_img is not None:
+                        frames.append(frame_img)
 
             if not frames:
                 flash("No valid frames received from webcam.", "error")
                 return redirect(request.url)
 
-            # Motion analysis (core anti-spoof layer for webcam)
-            motion_ok = check_motion(frames)
-            # Use the most recent frame for recognition
-            img = frames[-1]
+            # ── Blink detection (active liveness) ────────────────────────────
+            blink_ok, ear_seq, blink_debug = face_engine.detect_blink_in_sequence(frames)
 
+            print(
+                f"👁️  Blink detected: {blink_ok} | "
+                f"min_EAR={blink_debug.get('min_ear', 'N/A')} "
+                f"max_EAR={blink_debug.get('max_ear', 'N/A')} | "
+                f"frames={blink_debug.get('valid_frames', 0)}/{blink_debug.get('total_frames', 0)}"
+            )
+
+            img = frames[-1]  # Use the freshest frame for recognition
+
+            if not blink_ok:
+                # ── No blink → SPOOF ────────────────────────────────────────
+                reason = (
+                    "NO LANDMARK"
+                    if blink_debug.get("valid_frames", 0) < 2
+                    else "NO BLINK"
+                )
+                out_img, results = face_engine.annotate_as_spoof(img, reason)
+
+            else:
+                # ── Blink confirmed → run recognition only (liveness already passed) ─
+                out_img, results = face_engine.recognize_faces(
+                    img,
+                    known_embeddings,
+                    ids,
+                    names,
+                    skip_liveness=True,   # blink detection IS the liveness gate
+                )
+
+        # ──────────────────────────────────────────────────────────────
+        # UPLOAD PATH — unchanged; liveness skipped (SKIP_UPLOAD_LIVENESS = True)
+        # ──────────────────────────────────────────────────────────────
         else:
-            # Upload path: single file
             file = request.files.get("file")
             if not file:
                 flash("File required", "error")
@@ -237,52 +230,23 @@ def attendance():
                 flash("Invalid image", "error")
                 return redirect(request.url)
 
-        # Run face recognition (with or without liveness)
-        skip_liveness = (source == "upload") and SKIP_UPLOAD_LIVENESS
-        out_img, results = face_engine.recognize_faces(
-            img,
-            known_embeddings,
-            ids,
-            names,
-            skip_liveness=skip_liveness,
-        )
+            out_img, results = face_engine.recognize_faces(
+                img,
+                known_embeddings,
+                ids,
+                names,
+                skip_liveness=SKIP_UPLOAD_LIVENESS,
+            )
 
-        # Motion-check override for webcam
-        if source == "webcam" and not motion_ok:
-            print(" Motion check FAILED — marking all faces as FAKE (static image)")
-            out_img = img.copy()  # Redraw from scratch
-            for r in results:
-                r["is_real"] = False
-                # Preserve the recognised name inside the FAKE label if matched
-                if r.get("user_id") is not None:
-                    r["name"] = f"FAKE: {r['name']}"
-                else:
-                    r["name"] = "Unknown"
-                r["user_id"] = None  # Prevent attendance being marked
-
-                # Redraw box in red with STATIC SPOOF label
-                x1, y1, x2, y2 = r["box"]
-                cv2.rectangle(out_img, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                cv2.putText(
-                    out_img,
-                    f"STATIC SPOOF ({r['score']:.2f})",
-                    (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.8,
-                    (0, 0, 255),
-                    2,
-                )
-
-        # Mark attendance for confirmed real, matched faces
+        # ── Mark attendance for confirmed real, matched faces ─────────────────
         for r in results:
             uid = r.get("user_id")
             if uid is not None and r["is_real"]:
                 mark_attendance_csv(uid, r["name"])
 
-        # Save annotated result image
+        # ── Save annotated result image ───────────────────────────────────
         filename = f"result_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
-        save_path = os.path.join(app.config["RESULT_FOLDER"], filename)
-        cv2.imwrite(save_path, out_img)
+        cv2.imwrite(os.path.join(app.config["RESULT_FOLDER"], filename), out_img)
 
         return render_template(
             "attendance.html",

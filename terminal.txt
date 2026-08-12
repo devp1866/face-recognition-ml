@@ -1,0 +1,20 @@
+127.0.0.1 - - [12/Aug/2026 16:22:36] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [12/Aug/2026 16:22:37] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [12/Aug/2026 16:22:42] "GET /enroll HTTP/1.1" 200 -
+C:\PERSONAL\Projects\Machine Learning\face-detection-ml\.venv\Lib\site-packages\insightface\utils\face_align.py:23: FutureWarning: `estimate` is deprecated since version 0.26 and will be removed in version 2.2. Please use `SimilarityTransform.from_estimate` class constructor instead.
+  tform.estimate(lmk, dst)
+127.0.0.1 - - [12/Aug/2026 16:23:25] "POST /enroll HTTP/1.1" 302 -
+127.0.0.1 - - [12/Aug/2026 16:23:25] "GET /enroll HTTP/1.1" 200 -
+127.0.0.1 - - [12/Aug/2026 16:23:28] "GET /users HTTP/1.1" 200 -
+127.0.0.1 - - [12/Aug/2026 16:23:31] "GET /logs HTTP/1.1" 200 -
+127.0.0.1 - - [12/Aug/2026 16:23:32] "GET /attendance HTTP/1.1" 200 -
+👁️  Blink detected: False | min_EAR=0.7681 max_EAR=0.7855 | frames=10/10
+127.0.0.1 - - [12/Aug/2026 16:24:04] "POST /attendance HTTP/1.1" 200 -
+127.0.0.1 - - [12/Aug/2026 16:24:04] "GET /results/result_20260812162404.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [12/Aug/2026 16:24:15] "GET /attendance HTTP/1.1" 200 -
+127.0.0.1 - - [12/Aug/2026 16:24:30] "POST /attendance HTTP/1.1" 200 -
+127.0.0.1 - - [12/Aug/2026 16:24:30] "GET /results/result_20260812162430.jpg HTTP/1.1" 200 -
+👁️  Blink detected: False | min_EAR=0.6989 max_EAR=0.7847 | frames=10/10
+127.0.0.1 - - [12/Aug/2026 16:24:56] "POST /attendance HTTP/1.1" 200 -
+127.0.0.1 - - [12/Aug/2026 16:24:56] "GET /results/result_20260812162456.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [12/Aug/2026 16:25:02] "GET /attendance HTTP/1.1" 200 -

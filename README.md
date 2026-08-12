@@ -66,7 +66,6 @@ Both checks must pass for attendance to be marked.
 | **Database**      | SQLite                   | Lightweight local storage                |
 | **Frontend**      | TailwindCSS + Vanilla JS | Glassmorphism UI, webcam capture         |
 | **Config**        | python-dotenv            | Environment variable management          |
-| **Deployment**    | Docker                   | Containerized production deployment      |
 
 ---
 
