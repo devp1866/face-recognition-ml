@@ -6,6 +6,9 @@ from insightface.app import FaceAnalysis
 # Import AntiSpoofing (used for upload-mode only, not webcam)
 from core.antispoof import AntiSpoofDet
 
+# Import Deepfake Detector
+from core.deepfake_detector import DeepfakeDetector
+
 
 class FaceEngine:
 
@@ -44,7 +47,7 @@ class FaceEngine:
             zip_path = os.path.join(resources_path, "models", f"{model_name}.zip")
             if os.path.exists(zip_path):
                 os.remove(zip_path)
-                print(f"🧹 Cleanup: Removed temporary file {model_name}.zip")
+                print(f"[CLEANUP] Removed temporary file {model_name}.zip")
         except Exception as e:
             print(f" Warning: Could not remove zip file: {e}")
 
@@ -58,6 +61,10 @@ class FaceEngine:
             self.spoof_det = AntiSpoofDet(spoof_model_path)
         else:
             print(f" Warning: Anti-Spoofing model not found at {spoof_model_path}")
+
+        # Initialize Deepfake Detector (FFT-based, no external model needed)
+        print(" Initializing Deepfake Detector (FFT Analysis)...")
+        self.deepfake_det = DeepfakeDetector()
 
     def process_image(self, image_bytes):
         """Decode image bytes and return image array."""
@@ -296,12 +303,14 @@ class FaceEngine:
             out_img:  Annotated copy of the image with bounding boxes and labels drawn.
             results:  List of dicts, one per detected face:
                         {
-                          "user_id":  int | None,
-                          "name":     str,
-                          "score":    float,   # cosine similarity (0–1)
-                          "box":      [x1, y1, x2, y2],
-                          "is_real":  bool,
-                          "liveness": float,   # real probability from antispoof
+                          "user_id":        int | None,
+                          "name":           str,
+                          "score":          float,  # cosine similarity (0–1)
+                          "box":            [x1, y1, x2, y2],
+                          "is_real":        bool,
+                          "liveness":       float,  # real probability from antispoof
+                          "deepfake":       dict,   # FFT analysis result
+                          "is_authentic":   bool,   # False = suspected AI-generated
                         }
         """
         if threshold is None:
@@ -335,6 +344,15 @@ class FaceEngine:
                     is_real = True
                     liveness_score = 1.0
                     liveness_label = "Real (No Model)"
+
+            # Deepfake / AI-Generated Face Detection (FFT Analysis)
+            deepfake_result = self.deepfake_det.analyze(img, box)
+            is_authentic = deepfake_result["is_authentic"]
+
+            # If face is suspected AI-generated, treat it as a spoof
+            if not is_authentic and deepfake_result["label"] == "Suspected AI-Generated":
+                is_real = False
+                liveness_label = "AI-Generated Face"
 
             # Identity recognition
             matched_user_id = None
@@ -388,12 +406,14 @@ class FaceEngine:
 
             results.append(
                 {
-                    "user_id": matched_user_id,
-                    "name": name,
-                    "score": best_score,
-                    "box": [x1, y1, x2, y2],
-                    "is_real": is_real,
-                    "liveness": liveness_score,
+                    "user_id":      matched_user_id,
+                    "name":         name,
+                    "score":        best_score,
+                    "box":          [x1, y1, x2, y2],
+                    "is_real":      is_real,
+                    "liveness":     liveness_score,
+                    "deepfake":     deepfake_result,
+                    "is_authentic": is_authentic,
                 }
             )
 

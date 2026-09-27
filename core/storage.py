@@ -93,6 +93,46 @@ def delete_user_by_id(user_id):
     conn.close()
 
 
+def update_user_embedding(user_id, new_embedding):
+    """
+    Replace the stored embedding for a user with the given numpy array.
+
+    Called by the adaptive learning system after applying EMA to blend the
+    stored embedding with the latest recognition result. The embedding has
+    already been updated (EMA applied + re-normalized) before this call.
+
+    Args:
+        user_id:       Integer ID of the user to update
+        new_embedding: numpy float32 array of the updated face embedding
+    """
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    emb_bytes = new_embedding.astype(np.float32).tobytes()
+    c.execute(
+        "UPDATE users SET embedding = ? WHERE id = ?",
+        (emb_bytes, user_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_user_embedding(user_id):
+    """
+    Retrieve the stored embedding for a single user by ID.
+
+    Returns:
+        numpy float32 array, or None if user not found.
+    """
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("SELECT embedding FROM users WHERE id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    if row is None:
+        return None
+    return np.frombuffer(row[0], dtype=np.float32).copy()
+
+
 def get_user_count():
     """Get total number of enrolled users."""
     conn = sqlite3.connect(DB_NAME)

@@ -6,8 +6,12 @@ import os
 
 class AntiSpoofDet:
     # Liveness threshold: real_score must exceed this to be considered Real.
-    # Raised to 0.72 (production norm) from the loose 0.60 default.
-    LIVENESS_THRESHOLD = 0.72
+    # Lowered to 0.50 from 0.72 — the MiniFASNet model was trained on
+    # high-quality images; webcam captures (JPEG-compressed, variable lighting)
+    # naturally score 0.55-0.65 for real faces, so 0.72 caused false FAKE
+    # results for legitimate users. 0.50 is still a meaningful boundary and
+    # correctly rejects phone-screen/photo spoofs (which typically score <0.35).
+    LIVENESS_THRESHOLD = 0.50
 
     # Multi-scale crop factors used for ensemble prediction.
     # Running at multiple scales captures different texture frequencies,
@@ -97,7 +101,7 @@ class AntiSpoofDet:
         real_score = float(probs[0][0])
         return real_score
 
-    def predict(self, image, bbox_xyxy):
+    def predict(self, image, bbox_xyxy, threshold=None):
         """
         Predict liveness using multi-scale ensemble.
 
@@ -109,12 +113,19 @@ class AntiSpoofDet:
         Args:
             image:      Full BGR image (numpy array)
             bbox_xyxy:  Face bounding box [x1, y1, x2, y2]
+            threshold:  Optional override for LIVENESS_THRESHOLD.
+                        Pass a lower value for webcam captures (e.g. 0.45)
+                        and a higher value for uploaded images (e.g. 0.60).
+                        Defaults to LIVENESS_THRESHOLD (0.50).
 
         Returns:
             (label: str, score: float)
             label = "Real" or "Fake"
-            score = averaged real probability (0.0 – 1.0)
+            score = averaged real probability (0.0 - 1.0)
         """
+        if threshold is None:
+            threshold = self.LIVENESS_THRESHOLD
+
         x1, y1, x2, y2 = bbox_xyxy
         bbox_xywh = [int(x1), int(y1), int(x2 - x1), int(y2 - y1)]
 
@@ -125,13 +136,15 @@ class AntiSpoofDet:
                 real_score = self._run_single_scale(image, bbox_xywh, scale)
                 scale_scores.append(real_score)
             except Exception as e:
-                print(f"⚠️ Antispoof scale {scale} failed: {e}")
+                print(f"[WARN] Antispoof scale {scale} failed: {e}")
 
         if not scale_scores:
-            # If all scales failed, fail safe → treat as Fake
+            # If all scales failed, fail safe -> treat as Fake
             return "Fake", 0.0
 
         avg_real_score = float(np.mean(scale_scores))
 
-        label = "Real" if avg_real_score > self.LIVENESS_THRESHOLD else "Fake"
+        print(f"[LIVENESS] score={avg_real_score:.3f} threshold={threshold:.2f} -> {'Real' if avg_real_score > threshold else 'Fake'}")
+        label = "Real" if avg_real_score > threshold else "Fake"
         return label, avg_real_score
+

@@ -8,7 +8,7 @@
 ![Docker](https://img.shields.io/badge/Deploy-Docker-2496ED)
 
 A **Local-First AI Face Recognition Attendance System** built for high-security environments.  
-SmartFace combines **ArcFace** deep learning for precise identity recognition with a **two-layer anti-spoofing pipeline** (MiniFASNet + inter-frame motion analysis), ensuring only physically present, real individuals are verified.
+SmartFace combines **ArcFace** deep learning for precise identity recognition with a **three-layer anti-spoofing pipeline** (Motion Analysis + MiniFASNet + FFT Deepfake Detection) and **Adaptive Embedding Learning**, ensuring only physically present, real individuals are verified while the system continuously learns and adapts to aging or lighting changes over time.
 
 ---
 
@@ -16,40 +16,45 @@ SmartFace combines **ArcFace** deep learning for precise identity recognition wi
 
 All biometric data is processed **100% locally** — no cloud APIs, no external calls.
 
-Authentication is a two-stage pipeline:
+Authentication is a rigorous three-stage pipeline:
 
 1. **Motion Check** *(Webcam only)*: Three frames are captured 400 ms apart. Inter-frame pixel variance detects whether the face is live (natural micro-motion) or a static photo/screen (near-zero variance).
-2. **Liveness Check**: MiniFASNet runs at **three crop scales (2.7×, 4.0×, 1.5×)** and averages the scores — a multi-scale ensemble that is significantly harder to fool with a phone screen than single-scale inference.
-3. **Identity Match**: The verified face embedding is compared against the enrolled database using **cosine similarity** at a production threshold of **0.50**.
+2. **Liveness & Deepfake Check**: 
+   - **MiniFASNet** runs at three crop scales (2.7×, 4.0×, 1.5×) to catch phone screen reflections and print attacks.
+   - **FFT Deepfake Analysis** analyzes frequency domains to detect AI-generated or synthetic faces.
+3. **Identity Match & Adaptive Update**: The verified face embedding is compared against the enrolled database using cosine similarity. If matched with high confidence, the system updates the stored embedding (EMA) to learn the user's current appearance.
 
-Both checks must pass for attendance to be marked.
+All checks must pass for attendance to be marked.
 
 ---
 
 ## 🚀 Key Features
 
-- **🛡️ Two-Layer Anti-Spoofing**
-  - **Layer 1 — Motion Analysis**: Captures 3 webcam frames with 400 ms gaps; flags perfectly static sources (printed photos, phone screens held still) as spoof.
-  - **Layer 2 — Multi-Scale Liveness**: MiniFASNet ensemble across 3 crop scales; each scale captures different texture frequencies that phone screens fail to replicate.
+- **🛡️ Three-Layer Anti-Spoofing & Deepfake Detection**
+  - **Layer 1 — Motion Analysis**: Flags perfectly static sources (printed photos, screens) by analyzing 3 consecutive frames.
+  - **Layer 2 — Multi-Scale Liveness**: MiniFASNet ensemble across 3 crop scales catches spoofing textures.
+  - **Layer 3 — FFT Analysis**: Fast Fourier Transform catches AI-generated and deepfake synthetic media.
+
+- **🧠 Adaptive Embedding Learning**
+  - The system gets smarter over time. As users successfully authenticate, their stored embeddings are slowly updated using an Exponential Moving Average (EMA) to account for aging, facial hair, and lighting changes.
+
+- **👥 Group Attendance**
+  - Process up to 5 faces simultaneously in a single webcam capture or photo upload. Perfect for group check-ins.
 
 - **🔍 Precision Face Recognition**
   - Powered by **InsightFace (ArcFace / buffalo_l)** — state-of-the-art 512-dimensional face embeddings.
-  - Multi-photo enrollment: up to **4 reference images averaged** into one robust embedding per person.
-  - Cosine similarity matching at production threshold (`0.50`).
+  - Multi-photo enrollment: up to **4 reference images averaged** into one robust embedding.
 
-- **🔏 Privacy-First Architecture**
-  - 100% local inference — zero data leaves the server.
-  - Embeddings stored as binary blobs in SQLite, not raw face images.
+- **📊 Advanced Analytics Dashboard**
+  - Interactive **Chart.js** dashboard showing 7-day attendance trends, per-subject breakdowns, and individual attendance heatmaps.
 
 - **📱 Modern Web Interface**
   - Dark mode glassmorphism UI built with **TailwindCSS**.
-  - Dual input: live webcam capture + image upload.
-  - Real-time annotated result images with match score and liveness score.
+  - **AI Confidence Meter** visualizes match strength, liveness score, and FFT entropy.
+  - **Face Guide Overlay** assists users with optimal camera positioning.
 
 - **📂 Smart Data Management**
-  - SQLite for user/embedding storage with local-timezone timestamps.
-  - CSV-based attendance log with duplicate-per-day prevention.
-  - Download attendance log as CSV from the Logs page.
+  - SQLite storage for embeddings and subject-specific attendance tracking (prevents duplicate subject check-ins on the same day).
 
 ---
 
@@ -60,11 +65,11 @@ Both checks must pass for attendance to be marked.
 | **Core Logic**    | Python 3.10+             | Primary programming language             |
 | **Web Framework** | Flask + Gunicorn         | WSGI web server (dev + production)       |
 | **AI Engine**     | InsightFace (ArcFace)    | 512-dim face embeddings via buffalo_l    |
-| **Anti-Spoofing** | MiniFASNet v2 (ONNX)     | Multi-scale liveness detection           |
+| **Anti-Spoofing** | MiniFASNet v2 + FFT      | Multi-scale liveness & deepfake detector |
 | **Inference**     | ONNX Runtime             | CPU-optimized model inference            |
-| **Computer Vision** | OpenCV                 | Image decoding, annotation, motion check |
+| **Computer Vision** | OpenCV + SciPy       | Image decoding, motion check, FFT logic  |
 | **Database**      | SQLite                   | Lightweight local storage                |
-| **Frontend**      | TailwindCSS + Vanilla JS | Glassmorphism UI, webcam capture         |
+| **Frontend**      | TailwindCSS + Chart.js   | Glassmorphism UI, interactive analytics  |
 | **Config**        | python-dotenv            | Environment variable management          |
 
 ---
@@ -166,6 +171,8 @@ The container uses **Gunicorn** with 1 worker (optimized for free-tier RAM) and 
 ### 3. Manage & Export 📊
 
 - **Dashboard**: Daily stats — total users and today's attendance count.
+- **Analytics (New)**: Interactive charts mapping attendance over time, by subject, and by top attendees.
+- **Group Attendance (New)**: Batch process up to 5 people at once using a group photo.
 - **Users**: View enrolled profiles, delete individual users.
 - **Logs**: Full attendance history with name/date filters; download as CSV.
 - **Reset**: Wipe all data (users, logs, results) — requires typing `RESTART` to confirm.
@@ -180,19 +187,20 @@ Key constants in `app.py` that can be tuned:
 |---|---|---|
 | `MAX_USERS` | `10` | Maximum number of enrollable users |
 | `SKIP_UPLOAD_LIVENESS` | `True` | Skip liveness for uploaded images (testing) |
-| `MOTION_THRESHOLD` | `1.5` | Min inter-frame pixel variance to pass motion check |
+| `MOTION_THRESHOLD` | `0.8` | Min inter-frame pixel variance to pass motion check |
 
 Key constants in `core/recognition.py`:
 
 | Constant | Default | Description |
 |---|---|---|
-| `DEFAULT_THRESHOLD` | `0.50` | Cosine similarity threshold for identity match |
+| `DEFAULT_THRESHOLD` | `0.50` | Default identity match threshold |
+| `WEBCAM_THRESHOLD` | `0.42` | Looser threshold used for webcam captures |
 
 Key constants in `core/antispoof.py`:
 
 | Constant | Default | Description |
 |---|---|---|
-| `LIVENESS_THRESHOLD` | `0.72` | Minimum real-score to pass liveness check |
+| `LIVENESS_THRESHOLD` | `0.50` | Minimum real-score to pass liveness check |
 | `ENSEMBLE_SCALES` | `[2.7, 4.0, 1.5]` | Crop scales for multi-scale ensemble |
 
 ---
@@ -205,11 +213,16 @@ face-recognition-ml/
 ├── core/
 │   ├── recognition.py      # FaceEngine: detection, embedding, recognition
 │   ├── antispoof.py        # AntiSpoofDet: multi-scale MiniFASNet inference
+│   ├── deepfake_detector.py# FFT-based synthetic media detection
+│   ├── embedding_tracker.py# Adaptive learning (EMA) logic
+│   ├── quality.py          # Blur, brightness, and pose validation
 │   └── storage.py          # SQLite CRUD operations
 ├── templates/
 │   ├── layout.html         # Base layout (nav, header, reset modal)
 │   ├── index.html          # Dashboard
+│   ├── analytics.html      # Chart.js dashboards
 │   ├── attendance.html     # Multi-frame webcam + upload + results
+│   ├── group_attendance.html # Multi-face detection handler
 │   ├── enroll.html         # User enrollment
 │   ├── users.html          # User management
 │   ├── logs.html           # Attendance history

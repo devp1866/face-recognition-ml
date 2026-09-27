@@ -34,6 +34,10 @@
                             class="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                             Enrollment Date
                         </th>
+                        <th scope="col"
+                            class="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            Embedding Drift
+                        </th>
                         <th scope="col" class="relative px-6 py-4">
                             <span class="sr-only">Actions</span>
                         </th>
@@ -61,6 +65,30 @@
                                 class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                                 {{ user.created_at }}
                             </span>
+                        </td>
+                        <!-- Embedding Drift Column -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if user.drift.scan_count == 0 %}
+                            <span class="text-xs text-slate-500">No scans yet</span>
+                            {% elif user.drift.status == 'alert' %}
+                            <div class="flex items-center gap-1.5">
+                                <span class="inline-block w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
+                                <span class="text-xs font-semibold text-red-400">Re-enroll Needed</span>
+                                <span class="text-xs text-slate-500">({{ user.drift.scan_count }} scans)</span>
+                            </div>
+                            {% elif user.drift.status == 'warning' %}
+                            <div class="flex items-center gap-1.5">
+                                <span class="inline-block w-2 h-2 rounded-full bg-amber-400"></span>
+                                <span class="text-xs font-semibold text-amber-400">Drifting</span>
+                                <span class="text-xs text-slate-500">({{ user.drift.scan_count }} scans, avg {{ user.drift.avg_drift }})</span>
+                            </div>
+                            {% else %}
+                            <div class="flex items-center gap-1.5">
+                                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+                                <span class="text-xs text-emerald-400">Stable</span>
+                                <span class="text-xs text-slate-500">({{ user.drift.scan_count }} scans)</span>
+                            </div>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <form action="/delete_user/{{ user.id }}" method="post"

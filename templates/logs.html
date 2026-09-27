@@ -20,12 +20,10 @@
         </div>
     </div>
 
-    <!-- Filter Bar -->
     <div class="mb-8 bg-slate-800/40 backdrop-blur-md shadow-xl rounded-2xl border border-white/5 p-5">
-        <form action="/logs" method="get" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <form action="/logs" method="get" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-                <label for="name" class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Search
-                    User</label>
+                <label for="name" class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Search User</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -39,19 +37,30 @@
                 </div>
             </div>
 
-            <div class="flex items-end gap-2">
-                <div class="flex-grow">
-                    <label for="date"
-                        class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Date</label>
-                    <input type="date" name="date" id="date" value="{{ request.args.get('date', '') }}"
-                        class="block w-full rounded-xl bg-slate-900/50 border border-slate-700/50 text-white placeholder-slate-500 py-2.5 px-3 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 sm:text-sm">
-                </div>
+            <div>
+                <label for="date" class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Date</label>
+                <input type="date" name="date" id="date" value="{{ request.args.get('date', '') }}"
+                    class="block w-full rounded-xl bg-slate-900/50 border border-slate-700/50 text-white placeholder-slate-500 py-2.5 px-3 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 sm:text-sm">
+            </div>
+
+            <div>
+                <label for="subject" class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Subject</label>
+                <select name="subject" id="subject"
+                    class="block w-full rounded-xl bg-slate-900/50 border border-slate-700/50 text-white py-2.5 px-3 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 sm:text-sm">
+                    <option value="">All Subjects</option>
+                    {% for subj in subjects %}
+                    <option value="{{ subj }}" {{ 'selected' if request.args.get('subject') == subj }}>{{ subj }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="sm:col-span-3 flex items-center gap-3">
                 <button type="submit"
                     class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-xl transition-colors shadow-lg shadow-amber-500/20">
                     Filter
                 </button>
-                {% if request.args.get('name') or request.args.get('date') %}
-                <a href="/logs" class="px-3 py-2.5 text-slate-400 hover:text-white transition-colors">Clear</a>
+                {% if request.args.get('name') or request.args.get('date') or request.args.get('subject') %}
+                <a href="/logs" class="px-3 py-2.5 text-slate-400 hover:text-white transition-colors text-sm">Clear all</a>
                 {% endif %}
             </div>
         </form>
@@ -67,6 +76,10 @@
                         <th scope="col"
                             class="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                             User
+                        </th>
+                        <th scope="col"
+                            class="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            Subject
                         </th>
                         <th scope="col"
                             class="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
@@ -89,6 +102,17 @@
                                 </span>
                                 <div class="text-sm font-medium text-white">{{ log.name }}</div>
                             </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2.5 py-1 text-xs font-semibold rounded-full
+                                {% if log.subject == 'Mathematics' %}bg-blue-500/20 text-blue-300 border border-blue-500/30
+                                {% elif log.subject == 'Physics' %}bg-violet-500/20 text-violet-300 border border-violet-500/30
+                                {% elif log.subject == 'Chemistry' %}bg-green-500/20 text-green-300 border border-green-500/30
+                                {% elif log.subject == 'English' %}bg-rose-500/20 text-rose-300 border border-rose-500/30
+                                {% elif log.subject == 'Computer Science' %}bg-cyan-500/20 text-cyan-300 border border-cyan-500/30
+                                {% else %}bg-slate-700 text-slate-300 border border-slate-600{% endif %}">
+                                {{ log.subject }}
+                            </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-slate-300 font-mono">{{ log.time }}</div>

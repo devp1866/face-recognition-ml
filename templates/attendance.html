@@ -11,7 +11,7 @@
     </div>
 
     <!-- Mode Toggles (Pills) -->
-    <div class="flex justify-center mb-8">
+    <div class="flex justify-center mb-5">
         <div class="bg-slate-800/60 backdrop-blur-md p-1 rounded-full border border-white/10 flex shadow-xl">
             <button onclick="switchTab('upload')" id="tab-upload"
                 class="px-6 py-2 rounded-full text-sm font-semibold transition-all duration-300 text-white bg-slate-700/50 shadow-sm border border-white/5">
@@ -22,6 +22,20 @@
                 Live Webcam
             </button>
         </div>
+    </div>
+
+    <!-- Subject Selector -->
+    <div class="flex justify-center mb-8">
+        <div class="flex flex-wrap gap-2 justify-center">
+            {% for subj in subjects %}
+            <button type="button" onclick="selectSubject('{{ subj }}')" id="subj-{{ loop.index }}"
+                class="subject-btn px-4 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200
+                    {{ 'bg-teal-600 text-white border-teal-500' if subj == selected_subject else 'bg-slate-800/60 text-slate-400 border-slate-700 hover:border-teal-500/50 hover:text-white' }}">
+                {{ subj }}
+            </button>
+            {% endfor %}
+        </div>
+        <input type="hidden" id="selected-subject-val" value="{{ selected_subject }}">
     </div>
 
     <!-- Upload Section -->
@@ -67,6 +81,7 @@
                 </div>
 
                 <input type="hidden" name="source" value="upload">
+                <input type="hidden" name="subject" id="upload-subject" value="{{ selected_subject }}">
                 <button type="submit"
                     class="w-full py-3 px-4 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-teal-500/20 transform transition-all duration-200 hover:scale-[1.02] focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-slate-900">
                     Verify Identity
@@ -82,8 +97,26 @@
 
             <!-- Camera View with Loading Overlay -->
             <div class="relative bg-black rounded-xl overflow-hidden shadow-2xl aspect-video w-full border border-slate-700">
-                <video id="video-feed" autoplay playsinline class="w-full h-full object-cover"></video>
+            <video id="video-feed" autoplay playsinline class="w-full h-full object-cover"></video>
                 <canvas id="capture-canvas" class="hidden"></canvas>
+
+                <!-- Face Guide Oval Overlay (helps user position face correctly) -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none" style="z-index:2">
+                    <svg width="100%" height="100%" viewBox="0 0 640 480" preserveAspectRatio="xMidYMid meet" style="position:absolute;top:0;left:0">
+                        <!-- Dim overlay with cutout -->
+                        <defs>
+                            <mask id="face-mask">
+                                <rect width="640" height="480" fill="white"/>
+                                <ellipse cx="320" cy="220" rx="130" ry="160" fill="black"/>
+                            </mask>
+                        </defs>
+                        <rect width="640" height="480" fill="rgba(0,0,0,0.35)" mask="url(#face-mask)"/>
+                        <!-- Guide ellipse border -->
+                        <ellipse cx="320" cy="220" rx="130" ry="160" fill="none" stroke="#2dd4bf" stroke-width="3" stroke-dasharray="12 6" opacity="0.9"/>
+                        <!-- Corner hint arrows -->
+                        <text x="320" y="410" text-anchor="middle" fill="#2dd4bf" font-size="13" font-family="sans-serif" opacity="0.85">Position face inside the oval</text>
+                    </svg>
+                </div>
 
                 <!-- Countdown / Analyzing Overlay -->
                 <div id="capture-overlay"
@@ -111,6 +144,7 @@
             <!-- Hidden form for submitting frames -->
             <form id="webcam-form" action="/attendance" method="post" enctype="multipart/form-data" class="hidden">
                 <input type="hidden" name="source" value="webcam">
+                <input type="hidden" name="subject" id="webcam-subject" value="{{ selected_subject }}">
                 <!-- frame_0, frame_1, frame_2 are injected dynamically by JS -->
             </form>
 
@@ -161,9 +195,9 @@
                     {% for res in results %}
                     <div
                         class="flex items-center justify-between p-3 rounded-xl border border-white/5 {{ 'bg-green-500/10 border-green-500/20' if res.is_real and res.name != 'Unknown' else ('bg-red-500/10 border-red-500/20' if not res.is_real else 'bg-slate-700/30') }}">
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 w-full">
                             <div
-                                class="w-8 h-8 rounded-full flex items-center justify-center {{ 'bg-green-500 text-white' if res.is_real and res.name != 'Unknown' else ('bg-red-500 text-white' if not res.is_real or res.name == 'Unknown' else 'bg-slate-600') }}">
+                                class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center {{ 'bg-green-500 text-white' if res.is_real and res.name != 'Unknown' else ('bg-red-500 text-white' if not res.is_real or res.name == 'Unknown' else 'bg-slate-600') }}">
                                 {% if res.is_real and res.name != 'Unknown' %}
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -181,20 +215,60 @@
                                 </svg>
                                 {% endif %}
                             </div>
-                            <div>
+                            <div class="flex-1 min-w-0">
                                 <p class="font-bold text-white text-sm">{{ res.name }}</p>
-                                <p class="text-xs {{ 'text-green-400' if res.is_real else 'text-red-400' }}">
-                                    {{ 'REAL PERSON' if res.is_real else 'SPOOF ATTEMPT' }}
-                                </p>
+                                <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    <p class="text-xs {{ 'text-green-400' if res.is_real else 'text-red-400' }}">
+                                        {{ 'REAL PERSON' if res.is_real else 'SPOOF ATTEMPT' }}
+                                    </p>
+                                    <!-- Deepfake Detection Badge -->
+                                    {% if res.deepfake is defined %}
+                                        {% if not res.is_authentic %}
+                                        <span class="text-xs bg-red-500/20 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded-full font-bold">
+                                            ⚠ AI-Generated
+                                        </span>
+                                        {% elif res.deepfake.label == 'Uncertain' %}
+                                        <span class="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full">
+                                            ~ Uncertain
+                                        </span>
+                                        {% else %}
+                                        <span class="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded-full">
+                                            ✓ Authentic
+                                        </span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+
+                                <!-- ── AI Confidence Meter Bar ─────────────────── -->
+                                {% set pct = (res.score * 100) | round | int %}
+                                <div class="mt-2">
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="text-slate-400 font-medium">AI Confidence</span>
+                                        <span class="font-bold font-mono
+                                            {% if pct >= 55 %}text-green-400
+                                            {% elif pct >= 42 %}text-teal-400
+                                            {% elif pct >= 30 %}text-amber-400
+                                            {% else %}text-red-400{% endif %}">
+                                            {{ pct }}%
+                                        </span>
+                                    </div>
+                                    {% set w = [pct, 100] | min %}
+                                    {% if pct < 30 %}{% set grad = "#ef4444, #f97316" %}{% elif pct < 42 %}{% set grad = "#f97316, #eab308" %}{% else %}{% set grad = "#10b981, #2dd4bf" %}{% endif %}
+                                    <div class="w-full bg-slate-700/60 rounded-full h-2.5 overflow-hidden">
+                                        <div class="h-2.5 rounded-full transition-all duration-700 ease-out"
+                                            {{ ('style="width: ' ~ w ~ '%; background: linear-gradient(90deg, ' ~ grad ~ ');"') | safe }}>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-3 mt-1">
+                                        {% if active_tab == 'webcam' %}
+                                        <p class="text-xs text-slate-500">Liveness: <span class="{{ 'text-green-400' if res.liveness > 0.72 else 'text-red-400' }}">{{ "%.0f"|format(res.liveness * 100) }}%</span></p>
+                                        {% endif %}
+                                        {% if res.deepfake is defined %}
+                                        <p class="text-xs text-slate-600">FFT: {{ "%.2f"|format(res.deepfake.entropy) }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="text-right">
-                            <span class="block text-xs font-mono text-slate-400">Match: {{ "%.0f"|format(res.score *
-                                100) }}%</span>
-                            {% if active_tab == 'webcam' %}
-                            <span class="block text-xs font-mono text-slate-500">Live: {{ "%.2f"|format(res.liveness)
-                                }}</span>
-                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}
@@ -210,6 +284,27 @@
 </div>
 
 <script>
+    // ── Subject Selector ───────────────────────────────────────────────────────
+    function selectSubject(subj) {
+        document.getElementById('selected-subject-val').value = subj;
+        document.getElementById('upload-subject').value = subj;
+        document.getElementById('webcam-subject').value = subj;
+
+        // Update pill styles
+        document.querySelectorAll('.subject-btn').forEach(btn => {
+            const isActive = btn.textContent.trim() === subj;
+            btn.className = btn.className
+                .replace(/bg-teal-600 text-white border-teal-500/g, '')
+                .replace(/bg-slate-800\/60 text-slate-400 border-slate-700 hover:border-teal-500\/50 hover:text-white/g, '')
+                .trim();
+            if (isActive) {
+                btn.classList.add('bg-teal-600', 'text-white', 'border-teal-500');
+            } else {
+                btn.classList.add('bg-slate-800/60', 'text-slate-400', 'border-slate-700', 'hover:border-teal-500/50', 'hover:text-white');
+            }
+        });
+    }
+
     // ── Tab Switching ──────────────────────────────────────────────────────────
     function switchTab(tab) {
         const uploadSection = document.getElementById('section-upload');
@@ -308,7 +403,7 @@
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.92);
+            canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.95);
         });
     }
 
