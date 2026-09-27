@@ -60,6 +60,8 @@ os.makedirs(app.config["DATASET_FOLDER"], exist_ok=True)
 #  App-Level Constants
 MAX_USERS = 10
 
+# TESTING: Skip liveness for uploaded images (flat files always fail liveness).
+# Set to False to enforce liveness on all sources.
 SKIP_UPLOAD_LIVENESS = True
 
 # Subjects / Periods — edit this list to match your class schedule
@@ -277,33 +279,62 @@ def attendance():
     if request.method == "POST":
         source = request.form.get("source", "upload")
 
-        # Load known embeddings from DB 
+        # ── Load known embeddings ──────────────────────────────────────────────
         ids, names, known_embeddings = get_all_embeddings()
 
-        # Gather input frames 
-        frames = []
-        motion_ok = True  # Assume motion for upload mode
-
+        # ──────────────────────────────────────────────────────────────
+        # WEBCAM PATH — Active liveness via blink detection
+        # Blink detection using InsightFace 106-point landmarks is the primary gate.
+        # ──────────────────────────────────────────────────────────────
         if source == "webcam":
-            # Multi-frame path: frontend sends frame_0, frame_1, frame_2
-            for i in range(3):
+            # Collect up to 10 frames (JS sends frame_0 … frame_9)
+            frames = []
+            for i in range(10):
                 ff = request.files.get(f"frame_{i}")
                 if ff:
-                    img = face_engine.process_image(ff.read())
-                    if img is not None:
-                        frames.append(img)
+                    frame_img = face_engine.process_image(ff.read())
+                    if frame_img is not None:
+                        frames.append(frame_img)
 
             if not frames:
                 flash("No valid frames received from webcam.", "error")
                 return redirect(request.url)
 
-            # Motion analysis (core anti-spoof layer for webcam)
-            motion_ok = check_motion(frames)
-            # Use the most recent frame for recognition
-            img = frames[-1]
+            # ── Blink detection (active liveness) ────────────────────────────
+            blink_ok, ear_seq, blink_debug = face_engine.detect_blink_in_sequence(frames)
 
+            print(
+                f"👁️  Blink detected: {blink_ok} | "
+                f"min_EAR={blink_debug.get('min_ear', 'N/A')} "
+                f"max_EAR={blink_debug.get('max_ear', 'N/A')} | "
+                f"frames={blink_debug.get('valid_frames', 0)}/{blink_debug.get('total_frames', 0)}"
+            )
+
+            img = frames[-1]  # Use the freshest frame for recognition
+
+            if not blink_ok:
+                # ── No blink → SPOOF ────────────────────────────────────────
+                reason = (
+                    "NO LANDMARK"
+                    if blink_debug.get("valid_frames", 0) < 2
+                    else "NO BLINK"
+                )
+                out_img, results = face_engine.annotate_as_spoof(img, reason)
+
+            else:
+                # ── Blink confirmed → run recognition only (liveness already passed) ─
+                out_img, results = face_engine.recognize_faces(
+                    img,
+                    known_embeddings,
+                    ids,
+                    names,
+                    skip_liveness=True,   # blink detection IS the liveness gate
+                )
+
+        # ──────────────────────────────────────────────────────────────
+        # UPLOAD PATH — unchanged; liveness skipped (SKIP_UPLOAD_LIVENESS = True)
+        # ──────────────────────────────────────────────────────────────
         else:
-            # Upload path: single file
             file = request.files.get("file")
             if not file:
                 flash("File required", "error")
@@ -388,10 +419,9 @@ def attendance():
                             print(f"[WARN] Adaptive embedding update failed: {e}")
                 # ─────────────────────────────────────────────────────────────
 
-        # Save annotated result image
+        # ── Save annotated result image ───────────────────────────────────
         filename = f"result_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
-        save_path = os.path.join(app.config["RESULT_FOLDER"], filename)
-        cv2.imwrite(save_path, out_img)
+        cv2.imwrite(os.path.join(app.config["RESULT_FOLDER"], filename), out_img)
 
         return render_template(
             "attendance.html",

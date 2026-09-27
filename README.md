@@ -71,7 +71,6 @@ All checks must pass for attendance to be marked.
 | **Database**      | SQLite                   | Lightweight local storage                |
 | **Frontend**      | TailwindCSS + Chart.js   | Glassmorphism UI, interactive analytics  |
 | **Config**        | python-dotenv            | Environment variable management          |
-| **Deployment**    | Docker                   | Containerized production deployment      |
 
 ---
 
