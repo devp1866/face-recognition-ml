@@ -262,7 +262,7 @@
 
     <!-- Content -->
     <main
-        class="{{ 'flex-grow w-full relative z-10 overflow-y-auto flex flex-col pb-28 no-scrollbar' if request.path == '/about' else 'flex-grow max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full pb-24 relative z-10' }}">
+        class="{{ 'flex-grow w-full relative z-10 overflow-y-auto flex flex-col pb-48 no-scrollbar' if request.path == '/about' else 'flex-grow max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full pb-40 relative z-10' }}">
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}

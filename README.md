@@ -1,11 +1,11 @@
 # 🎯 SmartFace — Secure AI Attendance System
 
-![Status](https://img.shields.io/badge/Status-Production%20Ready-success)
+![Status](https://img.shields.io/badge/Status-Prototype%20MVP-blue)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
-![Framework](https://img.shields.io/badge/Framework-Flask_2.0%2B-green)
+![Framework](https://img.shields.io/badge/Framework-Flask-green)
 ![AI](https://img.shields.io/badge/AI-InsightFace%20(ArcFace)-orange)
-![AI](https://img.shields.io/badge/AI-MiniFASNet%20(ONNX)-orange)
-![Docker](https://img.shields.io/badge/Deploy-Docker-2496ED)
+![CI](https://github.com/devp1866/face-recognition-ml/actions/workflows/ci.yml/badge.svg)
+![License](https://img.shields.io/badge/License-MIT-green)
 
 A **Local-First AI Face Recognition Attendance System** built for high-security environments.  
 SmartFace combines **ArcFace** deep learning for precise identity recognition with a **three-layer anti-spoofing pipeline** (Motion Analysis + MiniFASNet + FFT Deepfake Detection) and **Adaptive Embedding Learning**, ensuring only physically present, real individuals are verified while the system continuously learns and adapts to aging or lighting changes over time.
@@ -31,9 +31,9 @@ All checks must pass for attendance to be marked.
 ## 🚀 Key Features
 
 - **🛡️ Three-Layer Anti-Spoofing & Deepfake Detection**
-  - **Layer 1 — Motion Analysis**: Flags perfectly static sources (printed photos, screens) by analyzing 3 consecutive frames.
+  - **Layer 1 — Motion Analysis**: Flags perfectly static sources (printed photos, screens) by analyzing consecutive frames.
   - **Layer 2 — Multi-Scale Liveness**: MiniFASNet ensemble across 3 crop scales catches spoofing textures.
-  - **Layer 3 — FFT Analysis**: Fast Fourier Transform catches AI-generated and deepfake synthetic media.
+  - **Layer 3 — FFT Analysis (Heuristic PAD)**: Fast Fourier Transform analyzes frequency domains to detect synthetic artifacts commonly found in early-generation deepfakes. *(Note: This is a heuristic Presentation Attack Detection method, not a foolproof deepfake barrier).*
 
 - **🧠 Adaptive Embedding Learning**
   - The system gets smarter over time. As users successfully authenticate, their stored embeddings are slowly updated using an Exponential Moving Average (EMA) to account for aging, facial hair, and lighting changes.
@@ -137,6 +137,41 @@ docker run -p 5000:5000 smartface
 ```
 
 The container uses **Gunicorn** with 1 worker (optimized for free-tier RAM) and a 120s timeout to allow InsightFace model loading on first start.
+
+---
+
+## 📈 Evaluation & Metrics
+
+This system relies on the pre-trained **ArcFace (buffalo_l)** model, which has been rigorously evaluated on public benchmarks:
+- **LFW (Labeled Faces in the Wild):** 99.83% accuracy.
+- **CFP-FP:** 98.37% accuracy.
+- **AgeDB-30:** 98.15% accuracy.
+
+**Threshold Selection (Cosine Similarity):**
+The recognition threshold is set to `0.50` (Cosine Similarity). 
+- Lowering this threshold decreases the False Rejection Rate (FRR) but increases the False Acceptance Rate (FAR).
+- Raising it increases security (lower FAR) but may inconvenience users (higher FRR). 
+- *Note for Enterprise:* In a massive dataset (10,000+ users), this threshold should be dynamically tuned using an ROC curve specific to the organization's camera hardware.
+
+---
+
+## ⚖️ Ethical AI, Privacy & Limitations
+
+Building biometric systems requires strict adherence to privacy and ethical standards (e.g., GDPR, CCPA).
+- **Data at Rest:** The system does **not** store raw face images after enrollment. It only stores irreversible 512-dimensional float arrays (embeddings) in SQLite.
+- **Consent & Right to be Forgotten:** Users must consent to enrollment. An admin dashboard provides a hard-delete function that instantly purges a user's embeddings and logs.
+- **Fail-Closed Security:** If the anti-spoofing engine fails to load or errors out, the system defaults to `SPOOF` (False). It does not fail open. 
+- **Demographic Bias:** Like all CNN-based face recognition models, ArcFace may exhibit varying accuracy across different skin tones, ages, and genders based on its training data.
+- **Deepfake Heuristics:** The FFT analysis is a *heuristic* Presentation Attack Detection (PAD) method. While effective against basic screen replays and synthetic artifacts, it is not guaranteed against advanced 3D silicone masks or highly synchronized modern deepfakes.
+
+---
+
+## 🏗️ Scaling to Production
+
+This repository serves as an **MVP / Prototype**. To deploy this to a massive enterprise scale (1,000+ users), the following architecture upgrades are required:
+1. **Database:** Migrate from SQLite to **PostgreSQL** with `pgvector` for hardware-accelerated embedding similarity search.
+2. **Workers:** Migrate from a single Gunicorn worker to a distributed task queue (e.g., **Celery + Redis**) to handle concurrent webcam streams.
+3. **Storage:** Move ephemeral local uploads to an **S3-compatible blob storage**.
 
 ---
 

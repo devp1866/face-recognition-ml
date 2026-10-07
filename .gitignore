@@ -36,3 +36,6 @@ resources/models/buffalo_l/
 # OS
 .DS_Store
 Thumbs.db
+
+# Terminal logs
+terminal.txt

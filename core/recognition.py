@@ -110,7 +110,8 @@ class FaceEngine:
             (is_real: bool, score: float, label: str)
         """
         if not self.spoof_det:
-            return True, 1.0, "Real (No Model)"
+            print("CRITICAL WARNING: Liveness model missing. Failing closed.")
+            return False, 0.0, "Spoof (System Error - Fail Closed)"
 
         label, score = self.spoof_det.predict(img, bbox)
         is_real = label == "Real"
