@@ -286,6 +286,7 @@ def attendance():
         # WEBCAM PATH — Active liveness via blink detection
         # Blink detection using InsightFace 106-point landmarks is the primary gate.
         # ──────────────────────────────────────────────────────────────
+        motion_ok = True
         if source == "webcam":
             # Collect up to 10 frames (JS sends frame_0 … frame_9)
             frames = []
@@ -302,6 +303,7 @@ def attendance():
 
             # ── Blink detection (active liveness) ────────────────────────────
             blink_ok, ear_seq, blink_debug = face_engine.detect_blink_in_sequence(frames)
+            motion_ok = blink_ok
 
             print(
                 f"👁️  Blink detected: {blink_ok} | "
